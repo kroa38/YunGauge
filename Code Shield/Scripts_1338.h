@@ -1,0 +1,10 @@
+
+#ifndef SCRIPTS1338_H
+#define SCRIPTS1338_H
+
+#define SIZEOF_SCRIPT_INIT_DS1338 1U*3U
+
+__flash extern const Int8U SCRIPT_INIT_DS1338[SIZEOF_SCRIPT_INIT_DS1338];
+
+
+#endif
