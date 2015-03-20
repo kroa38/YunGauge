@@ -40,8 +40,6 @@ DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive '
 GMAIL_SCOPE = 'https://mail.google.com/'
 SHEET_SCOPE = 'https://spreadsheets.google.com/feeds'
 
-test_folder = '0B9Yp8cxBtjfeflpyS0pUdi1pSm92eTd0SVBpbklRQzJPd1psMkR1RkI1azRoZkRfNEpZb2c1'
-
 # --------------------------------------------------------------------------------------------------
 
 
@@ -149,7 +147,7 @@ def print_files_in_folder(folder_id):
                 param['pageToken'] = page_token
             children = drive_service.children().list(folderId=folder_id, **param).execute()
             if not len(children['items']):
-                log_error("No File in folder or bad folder_id in function :  print_files_in_folder() ")
+                log_error("No File in folder %s \r\t\t\t\t\tor bad folder_id in function :  print_files_in_folder() " % folder_id)
                 break
             for child in children.get('items', []):
                 print child['id']
@@ -245,7 +243,7 @@ def check_connectivity():
     :rtype : int (1 = true 0 = false)
     """
     try:
-        response=urllib2.urlopen('http://www.google.fr/',timeout=4)
+        _ = urllib2.urlopen('http://www.google.fr/',timeout=4)
         print "true"
         return 1
     except urllib2.URLError as err:
@@ -343,8 +341,10 @@ if __name__ == '__main__':
 
       #drive_delete_file("0B9Yp8cxBtjfea2xiU3VEblRsaE0")
       #File_Id = drive_insert_file("teleinfo.log", test_folder)
-      # print_files_in_folder(test_folder)
-      gmaillistmessage()
+      folder = get_json_data_from_file("email.json")
+      folder = folder['test_folder']
+      print_files_in_folder(folder)
+      #gmaillistmessage()
       #gmailsendmessage("test de message")
       #check_connectivity()
       #print str(get_index())
