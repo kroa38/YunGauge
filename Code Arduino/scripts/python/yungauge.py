@@ -17,7 +17,7 @@ Created on Tue Feb 17 16:40:25 2015
  This project generate the files below
  
  error.log		(tracking errors)
- event.log		(tracking event)
+ event.log		(tracking event)...
  
  
 """
