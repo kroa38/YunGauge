@@ -5,7 +5,7 @@
 import csv              # lib pour fichiers csv
 
 from cloudscope import log_error
-from yungauge import log_event
+from cloudscope import log_event
 from cloudscope import oauth2_build
 
 DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive '
@@ -23,6 +23,8 @@ def get_index():
     try:
         ifile = open('indexfile.csv', "r")
         data = ifile.read()
+        if data == '':
+            data = "0"
         ifile.close()
         return int(data)
     except IOError:
