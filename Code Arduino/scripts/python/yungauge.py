@@ -52,8 +52,8 @@ def oauth2_build(scope):
     credentials = storage.get()
 
     http_auth = httplib2.Http()
-    # credentials.refresh(http_auth)
-    # storage.put(credentials)
+    credentials.refresh(http_auth)
+    storage.put(credentials)
 
     http_auth = credentials.authorize(http_auth)
 
@@ -243,10 +243,10 @@ def check_connectivity():
     :rtype : int (1 = true 0 = false)
     """
     try:
-        _ = urllib2.urlopen('http://www.google.fr/',timeout=4)
+        _ = urllib2.urlopen('http://www.google.fr/', timeout=4)
         print "true"
         return 1
-    except urllib2.URLError as err:
+    except urllib2.URLError:
         print "false"
         return 0
 
@@ -308,8 +308,6 @@ def get_index():
         ifile.write("0")
         ifile.close()
 
-
-
 # --------------------------------------------------------------------------------------------------
 
 
@@ -324,30 +322,39 @@ def put_index(index):
 # --------------------------------------------------------------------------------------------------
 
 
-# def worksheet():
+def worksheet():
 
-    # sheet_service = oauth2_build(SHEET_SCOPE)
-    # wks = sheet_service.open("teleinfo").sheet1
+    sheet_service = oauth2_build(SHEET_SCOPE)
+    wks = sheet_service.open("teleinfo").sheet1
+    for ligne in range(1, 10):
+        data=float(ligne)*3.12
+        wks.update_cell(ligne, 6, data )
+        print data
     # val = wks.acell('E1').value
     # print val
     # val = wks.cell(1,2).value
     # print val
-    # wks.update_cell(1,6,'lalalalo !')
+
 
 # --------------------------------------------------------------------------------------------------
 
 
 if __name__ == '__main__':
+    """ main function
+    :itype :
+    :rtype : None
+    """
+    worksheet()
 
-      #drive_delete_file("0B9Yp8cxBtjfea2xiU3VEblRsaE0")
-      #File_Id = drive_insert_file("teleinfo.log", test_folder)
-      folder = get_json_data_from_file("email.json")
-      folder = folder['test_folder']
-      print_files_in_folder(folder)
-      #gmaillistmessage()
-      #gmailsendmessage("test de message")
-      #check_connectivity()
-      #print str(get_index())
-      #put_index(12355)
-      #print str(get_index())
+# drive_delete_file("0B9Yp8cxBtjfea2xiU3VEblRsaE0")
+# File_Id = drive_insert_file("teleinfo.log",test_folder)
+# folder = get_json_data_from_file("email.json")
+# folder = folder['test_folder']
+# print_files_in_folder(folder)
+# gmaillistmessage()
+# gmailsendmessage("test de message")
+# check_connectivity()
+# print str(get_index())
+# put_index(12355)
+# print str(get_index())
 
