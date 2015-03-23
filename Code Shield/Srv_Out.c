@@ -54,7 +54,7 @@ C'est ici que l'on lance la capture de la Teleinfo
 toutes les 45 secondes.
 
 rtc_nvram contient la valeur d'échantillonage de teleinfo qui peut être
-toutes les 5min, 10min, 15min, 20min, 30min, 60min
+toutes les 1min, 5min, 10min, 15min, 20min, 30min, 60min, ou tous les jours à heure fixe.
 
 ********************************************************************************************************/
 void Srv_Out_Event_RTC_TIC(void)

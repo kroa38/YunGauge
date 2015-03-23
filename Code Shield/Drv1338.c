@@ -76,9 +76,16 @@ Int8U Drv_DS1338_read_day(void)
 /*******************************************************************************
 Int8U Drv_DS1338_Check_Minute(void)
 permet de synchroniser sur l'horloge la prise des echantillons de teleinfo
-soit toutes les 5min, 10min, 15min, 20min, 30min, 60min.
+soit toutes les 1min, 5min, 10min, 15min, 20min, 30min, 60min.tous les jours 
+à heure fixe
+
+pour toutes les minutes passer 1 en paramètre.
+pour toutes les 20 minutes passer 20 en paramètre
+pour tous les jours à 6h passer le paramètre 106
+pour tous les jours à 14h passer le paramètre 114
 
 In : mode en minute
+
 out : 1 ok on est bien synchronisé sur le temps
 out : 0 on est pas synchronisé.
 
