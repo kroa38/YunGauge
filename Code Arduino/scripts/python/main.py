@@ -4,7 +4,10 @@
 
 import csv              # lib pour fichiers csv
 import json
-
+import plotly
+import plotly.plotly as py
+import plotly.tools as tls
+from plotly.graph_objs import *
 from cloudscope import log_error
 from cloudscope import log_event
 from cloudscope import oauth2_build
@@ -90,13 +93,32 @@ def  cvs_to_json():
     jsonfile.write('\b]\n')
 # --------------------------------------------------------------------------------------------------
 
+def plotlytest():
+    """ Plotly test
+    before using you must run he command below. This command create a credential json file
+    in your $HOME/.plotly directory.
+    plotly.tools.set_credentials_file(username='username', api_key='key', stream_ids=['id1', 'id2'])
+    :itype : none
+    :rtype : None
+    """
+
+    credentials = tls.get_credentials_file()
+    trace0 = Scatter(x=[1, 2, 3, 4],y=[50, 15, 23, 17])
+    trace1 = Scatter(x=[1, 2, 3, 4],y=[161, 500, 511, 999])
+
+    data = Data([trace0, trace1])
+
+    unique_url = py.plot(data, filename='basic-line')
+# --------------------------------------------------------------------------------------------------
+
 if __name__ == '__main__':
     """ main function
     :itype :
     :rtype : None
     """
     # worksheet()
-    cvs_to_json()
+    # cvs_to_json()
+    #plotlytest()
     #json_data = open("file.json").read()
     #python_data = json.loads(json_data)
     #print python_data[0]["INDEX_HP"]
