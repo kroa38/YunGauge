@@ -13,7 +13,7 @@
 #define EEPROM_SIZE 21U           
 
 /******************************************************/
-
+/* kroa38 */
 
 
 /* description A block of code may be made atomic by wrapping it with this
