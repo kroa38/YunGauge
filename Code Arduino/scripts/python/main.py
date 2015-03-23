@@ -3,6 +3,7 @@
 
 
 import csv              # lib pour fichiers csv
+import json
 
 from cloudscope import log_error
 from cloudscope import log_event
@@ -72,7 +73,21 @@ def printrowcvs():
         ligne += 1
     put_index(ligne)
     ifile.close()
-
+# --------------------------------------------------------------------------------------------------
+def  cvs_to_json():
+    """ read a cvs file and write it to a json file
+    :itype : integer
+    :rtype : None
+    """
+    csvfile = open('teleinfo.csv', 'r')
+    jsonfile = open('file.json', 'w')
+    jsonfile.write('[\n')
+    fieldnames = ("INDEX_HP","INDEX_HC","MODE","WATER","DATE","TIME")
+    reader = csv.DictReader( csvfile, fieldnames)
+    for row in reader:
+        json.dump(row, jsonfile,indent=4)
+        jsonfile.write(',\n')
+    jsonfile.write('\b]\n')
 # --------------------------------------------------------------------------------------------------
 
 if __name__ == '__main__':
@@ -81,4 +96,8 @@ if __name__ == '__main__':
     :rtype : None
     """
     # worksheet()
-    printrowcvs()
+    cvs_to_json()
+    #json_data = open("file.json").read()
+    #python_data = json.loads(json_data)
+    #print python_data[0]["INDEX_HP"]
+
