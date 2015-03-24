@@ -1,6 +1,19 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+"""
+utilise un fichier Json du format suivant pour la config
+{
+      "source_mail":"email",
+      "dest_mail":"email",
+      "folder_id":"the_working_folder id_on_google_drive",
+      "arduino_config" : {
+                          "sampling_interval":5,
+                          "adjust_rtc":20
+                          }
 
+}
+
+"""
 
 import csv              # lib pour fichiers csv
 import json
