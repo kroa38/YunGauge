@@ -4,6 +4,7 @@
 
 import csv              # lib pour fichiers csv
 import json
+import sys
 import plotly
 import plotly.plotly as py
 import plotly.tools as tls
@@ -93,7 +94,7 @@ def  cvs_to_json():
     jsonfile.write('\b]\n')
 # --------------------------------------------------------------------------------------------------
 
-def plotlytest():
+def plotly_test():
     """ Plotly test
     before using you must run he command below. This command create a credential json file
     in your $HOME/.plotly directory.
@@ -109,6 +110,7 @@ def plotlytest():
     data = Data([trace0, trace1])
 
     unique_url = py.plot(data, filename='basic-line')
+
 # --------------------------------------------------------------------------------------------------
 
 if __name__ == '__main__':
@@ -122,4 +124,3 @@ if __name__ == '__main__':
     #json_data = open("file.json").read()
     #python_data = json.loads(json_data)
     #print python_data[0]["INDEX_HP"]
-

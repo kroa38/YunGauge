@@ -207,7 +207,7 @@ def gmailcreatemessage(message_text):
     :itype : string text message
     :rtype : string  raw encoded
     """
-    data_email = get_json_data_from_file('email.json')
+    data_email = get_json_data_from_file('config.json')
     message = MIMEText(message_text)
     message['to'] = data_email['dest_mail']
     message['from'] = data_email['source_mail']
@@ -278,7 +278,7 @@ def log_event(event_message):
 
 # drive_delete_file("0B9Yp8cxBtjfea2xiU3VEblRsaE0")
 # File_Id = drive_insert_file("teleinfo.log",test_folder)
-# folder = get_json_data_from_file("email.json")
+# folder = get_json_data_from_file("config.json")
 # folder = folder['test_folder']
 # print_files_in_folder(folder)
 # gmaillistmessage()
