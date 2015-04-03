@@ -18,6 +18,8 @@ utilise un fichier Json du format suivant pour la config
 import csv              # lib pour fichiers csv
 import json
 import sys
+import requests			# Used for the warning InsecurePlatformWarning in python 2.7.3
+import warnings		    # Used for the warning InsecurePlatformWarning in python 2.7.3
 import plotly
 import plotly.plotly as py
 import plotly.tools as tls
@@ -115,7 +117,9 @@ def plotly_test():
     :itype : none
     :rtype : None
     """
-
+	# Used for ignore the warning InsecurePlatformWarning in python 2.7.3
+	requests.packages.urllib3.disable_warnings()
+	
     credentials = tls.get_credentials_file()
     trace0 = Scatter(x=[1, 2, 3, 4],y=[50, 15, 23, 17])
     trace1 = Scatter(x=[1, 2, 3, 4],y=[161, 500, 511, 999])
