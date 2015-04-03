@@ -131,6 +131,7 @@ if __name__ == '__main__':
     :itype :
     :rtype : None
     """
+    plotly_test()
     # worksheet()
     # cvs_to_json()
     #plotlytest()

@@ -13,7 +13,6 @@ void Srv_Out_Event(void)
    Srv_StoreEventDoorToFile();
    Srv_AdjustDateEveryDay();
    
-   
 }
 /***********************************************************
 void WaitForLinino()
@@ -26,21 +25,21 @@ void Srv_WaitForLinino()
     Event.WaitForLinino=0;
     
     #ifdef DEBUG
-    Serial.println("Wait for Linino");
+    Serial.println(F("Wait for Linino"));
     #endif
 	
     for(int i=0;i<WAITFORLININO;i++)
     {
       Blink_Led(1);
       #ifdef DEBUG
-      Serial.print(".");
+      Serial.print(F("."));
       #endif
       delay(1000);
     }
     
     #ifdef DEBUG
     Serial.println("");
-    Serial.println("Linux is ready ");
+    Serial.println(F("Linux is ready "));
     #endif
     RequestToSend();
     RTC.writeSqwPinMode(SquareWave1HZ);	
@@ -67,10 +66,10 @@ char Srv_PingGoogle(void)
     char retval;
     
     #ifdef DEBUG
-    Serial.println("Run shell script ping"); 
+    Serial.println(F("Run shell script ping")); 
     #endif    
 
-    shell.begin("/mnt/sda1/shell/pingoo.sh");
+    shell.begin(F("/mnt/sda1/shell/pingoo.sh"));
     shell.run();
 
     while(shell.available())
@@ -80,7 +79,7 @@ char Srv_PingGoogle(void)
     Serial.flush();
    
     #ifdef DEBUG
-    Serial.print("Google Ping Result : "); 
+    Serial.print(F("Google Ping Result : ")); 
     Serial.println(result[0]);
     #endif
     
@@ -88,7 +87,7 @@ char Srv_PingGoogle(void)
     {
       
       #ifdef DEBUG
-      Serial.println("No internet connexion !");
+      Serial.println(F("No internet connexion !"));
       Event.PrintRtcDate=1;
       #endif
     
@@ -97,7 +96,7 @@ char Srv_PingGoogle(void)
     else if(result[0] == '1')
     {
       #ifdef DEBUG
-      Serial.println("Internet Ok");     
+      Serial.println(F("Internet Ok"));     
       #endif
       
       retval=1;
@@ -116,7 +115,7 @@ char Srv_PingGoogle(void)
 /***********************************************************
 void Ntp_To_Rtc_Update();
 Récupère la date et l'heure de Linino
-et met a jour la RTC
+et met à jour la RTC
 ************************************************************/
 void Srv_Ntp_To_Rtc_Update()
 {
@@ -130,22 +129,22 @@ void Srv_Ntp_To_Rtc_Update()
     String DateL = "";
     String TimeL = "";
     #ifdef DEBUG
-    Serial.println("Ntp to RTC Update");
+    Serial.println(F("Ntp to RTC Update"));
     #endif
     //RTC.begin();
     //interruption de 1Hz pour le shield
     //RTC.writeSqwPinMode(SquareWave1HZ);	
     
-    DateL = ProcExec("date","+%Y-%m-%d");
+    DateL = ProcExec(F("date"),F("+%Y-%m-%d"));
     #ifdef DEBUG
-    Serial.print("Linino Date:");
+    Serial.print(F("Linino Date:"));
     Serial.print(DateL);
     #endif
   
-    TimeL = ProcExec("date","+%T");
+    TimeL = ProcExec(F("date"),F("+%T"));
     
     #ifdef DEBUG  
-    Serial.print("Linino Time:");
+    Serial.print(F("Linino Time:"));
     Serial.print(TimeL);
     #endif
   
@@ -184,10 +183,10 @@ void Srv_Email_Ip_Address(void)
     char retval;
     
     #ifdef DEBUG
-    Serial.println("Email me IP address"); 
+    Serial.println(F("Email Yun IP address")); 
     #endif    
 
-    shell.begin("/mnt/sda1/shell/my_ip.sh");
+    shell.begin(F("/mnt/sda1/shell/my_ip.sh"));
     shell.run();
     }
  }
@@ -204,13 +203,13 @@ void Srv_PrintLininoDate()
     String DateL = "";
     String TimeL = "";
     
-    DateL = ProcExec("date","+%Y-%m-%d %T");
-    //TimeL = ProcExec("date","+%T");    
+    DateL = ProcExec(F("date"),F("+%Y-%m-%d %T"));
+    TimeL = ProcExec("date","+%T");    
 
-    Serial.print("Linino Date: ");
+    Serial.print(F("Linino Date: "));
     Serial.println(DateL);
-    //Serial.print("  ");    
-    //Serial.println(TimeL);
+    Serial.print("  ");    
+    Serial.println(TimeL);
   }
 
 }
@@ -230,7 +229,7 @@ void Srv_PrintRtcDate()
     ClearToSend();    
     
     Event.PrintRtcDate=0;
-    Serial.print("RTC Date: ");
+    Serial.print(F("RTC Date: "));
     Serial.print(now.day(), DEC);
     Serial.print('/');
     Serial.print(now.month(), DEC);
@@ -250,10 +249,9 @@ void Srv_PrintRtcDate()
  
 }
 /***********************************************************
-void Srv_StoreEventToFile()
+void Srv_AdjustDateEveryDay()
 
-Met en forme la donnée reçu par l'uart avec la date
-et copie sur le fichier datalog.txt
+ajuste la RTC avec l'heure de linino.
 ************************************************************/
 void Srv_AdjustDateEveryDay()
 {
@@ -265,7 +263,7 @@ void Srv_AdjustDateEveryDay()
   if((currentMillis - previousMillis) > HOUR_ADJUST_CHECK) 
   {
      #ifdef DEBUG
-      Serial.println("HOUR_ADJUST_CHECK...");
+      Serial.println(F("HOUR_ADJUST_CHECK..."));
      #endif
     RequestToSend();
     DateTime now = RTC.now();
@@ -280,7 +278,7 @@ void Srv_AdjustDateEveryDay()
       Event.PingGoogle = 1;  
       
       #ifdef DEBUG
-      Serial.println("Adjust Date and Time from Internet at 20h");
+      Serial.println(F("Adjust Date and Time from Internet at 20h"));
       #endif
     }
   }
@@ -292,6 +290,7 @@ void Srv_StoreEventTeleinfoToFile()
 
 Met en forme la donnée reçu par l'uart avec la date
 et copie sur le fichier teleinfo.txt
+
 ************************************************************/
 
 void Srv_StoreEventTeleinfoToFile()
@@ -302,7 +301,7 @@ void Srv_StoreEventTeleinfoToFile()
     Event.StoreEventTeleinfoToFile = 0;
     
     #ifdef DEBUG
-    Serial.println("Store to file teleinfo.log ...");
+    Serial.println(F("Store to file teleinfo.log ..."));
     #endif
     
     File dataFile = FileSystem.open("/mnt/sda1/log/teleinfo.log", FILE_APPEND);
@@ -313,47 +312,13 @@ void Srv_StoreEventTeleinfoToFile()
 
       
       #ifdef DEBUG 
-      Serial.println("File ok...!");
+      Serial.println(F("File ok...!"));
       #endif
-      // store event to file
+      //construct string
+      dataString += ',';
+      dataString += getdate(DATE_ISO8601);
       dataFile.print(dataString);
-      dataFile.print(',');
-
-      RequestToSend();
-      DateTime now = RTC.now();
-      ClearToSend(); 
-      
-      //debut date format ISO-8601
-      dataFile.print(now.year(), DEC); 
-      dataFile.print('-');
-      dataFile.print(now.month(), DEC);
-      dataFile.print('-');
-      dataFile.print(now.day(), DEC);
-      dataFile.print('T');
-      dataFile.print(now.hour(), DEC);
-      dataFile.print(':');
-      dataFile.print(now.minute(), DEC);
-      dataFile.print(':');
-      dataFile.print(now.second(), DEC); 
-      dataFile.print('+0100');      
-      // fin de date format ISO-8601    
-      
-      /*
-      dataFile.print(now.day(), DEC);
-      dataFile.print('/');
-      dataFile.print(now.month(), DEC);
-      dataFile.print('/');
-      dataFile.print(now.year(), DEC);
-      dataFile.print(',');
-      dataFile.print(now.hour(), DEC);
-      dataFile.print(':');
-      dataFile.print(now.minute(), DEC);
-      */
-      //dataFile.print(':');
-      //dataFile.print(now.second(), DEC);      
-      
-      dataFile.println(','); 
-      // close the file
+      // store event to file
       dataFile.close();
 
       Blink_Led(2);      
@@ -362,7 +327,7 @@ void Srv_StoreEventTeleinfoToFile()
     else
     {
       #ifdef DEBUG  
-      Serial.print("File Error....!");
+      Serial.print(F("File Error....!"));
       #endif
       while(1)
       {
@@ -384,13 +349,12 @@ et copie sur le fichier door.txt
 
 void Srv_StoreEventDoorToFile()
 {
-  
   if(Event.StoreEventDoorToFile)
    {
     Event.StoreEventDoorToFile = 0;
     
     #ifdef DEBUG
-    Serial.println("Store to file door.log ...");
+    Serial.println(F("Store to file door.log ..."));
     #endif
     
     File dataFile = FileSystem.open("/mnt/sda1/log/door.log", FILE_APPEND);
@@ -400,46 +364,13 @@ void Srv_StoreEventDoorToFile()
     {
 
       #ifdef DEBUG 
-      Serial.println("File ok...!");
+      Serial.println(F("File ok...!"));
       #endif
-      // store event to file
+      //construct string
+      dataString += ',';
+      dataString += getdate(DATE_ISO8601);
       dataFile.print(dataString);
-      dataFile.print(',');
-      
-      RequestToSend();
-      DateTime now = RTC.now();
-      ClearToSend(); 
-
-      //debut date format ISO-8601
-      dataFile.print(now.year(), DEC); 
-      dataFile.print('-');
-      dataFile.print(now.month(), DEC);
-      dataFile.print('-');
-      dataFile.print(now.day(), DEC);
-      dataFile.print('T');
-      dataFile.print(now.hour(), DEC);
-      dataFile.print(':');
-      dataFile.print(now.minute(), DEC);
-      dataFile.print(':');
-      dataFile.print(now.second(), DEC); 
-      dataFile.print('+0100');      
-      // fin de date format ISO-8601 
-      /*
-      dataFile.print(now.day(), DEC);
-      dataFile.print('/');
-      dataFile.print(now.month(), DEC);
-      dataFile.print('/');
-      dataFile.print(now.year(), DEC);
-      dataFile.print(',');
-      dataFile.print(now.hour(), DEC);
-      dataFile.print(':');
-      dataFile.print(now.minute(), DEC);
-      */
-      //dataFile.print(':');
-      //dataFile.print(now.second(), DEC);
-      
-      dataFile.println(','); 
-      // close the file
+      // store event to file
       dataFile.close();
       
       Blink_Led(2);                        
@@ -448,7 +379,7 @@ void Srv_StoreEventDoorToFile()
     else
     {
       #ifdef DEBUG  
-      Serial.print("File Error....!");
+      Serial.print(F("File Error....!"));
       #endif
       while(1)
       {
@@ -461,5 +392,60 @@ void Srv_StoreEventDoorToFile()
   }
   
 }
+/***********************************************************
+void *getdate()
 
+renvoie la date au format ISO8601 ou CUSTOM
+dans le tableau date_array
+in : format
+out : pointeur vers date_array (variable globale)
+************************************************************/
+char *getdate(char format)
+{
+  for(char i=0;i<WAITFORLININO;i++)
+  {
+    date_array[i] = 0;
+  }
+    
+  RequestToSend();
+  DateTime now = RTC.now();
+  ClearToSend();
+  
+  if(format==DATE_ISO8601)
+  {
+    String str = String(now.year(), DEC); 
+    str += '-';
+    str += String(now.month(), DEC);
+    str += '-';
+    str += String(now.day(), DEC);  
+    str += 'T';  
+    str += String(now.hour(), DEC); 
+    str += ':';
+    str += String(now.minute(), DEC);
+    str += ':'; 
+    str += String(now.second(), DEC); 
+    str += String("+0100");
+    
+    str.toCharArray(date_array,25);
+    
+    return date_array;
+  }
+  else if(format==DATE_CUSTOM)
+  {
+    String str = String(now.day(), DEC); 
+    str += '/';
+    str += String(now.month(), DEC);
+    str += '/';
+    str += String(now.year(), DEC);  
+    str += ',';  
+    str += String(now.hour(), DEC); 
+    str += ':';
+    str += String(now.minute(), DEC);
+    
+    str.toCharArray(date_array,25);
+    
+    return date_array;    
+  }
+}
+  
 

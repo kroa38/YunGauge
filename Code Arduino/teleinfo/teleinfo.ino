@@ -17,16 +17,22 @@ DEFINITIONS
 #define RTSPIN 6                           // n° de la pin RTS (output)
 #define CTSPIN 5                           // n° de la pin CTS (INPUT)
 #define LEDVERTE 13                        // LED verte pour test
-#undef DEBUG                               // sortie console pour debug
+#undef  DEBUG                               // sortie console pour debug
 #define HOUR_ADJUST_CHECK 50UL*60UL*1000UL    // interval check pour la maj de l'heure de internet (50 minutes)
 #define HOUR_ADJUST 20                     // heure de la mise a jour de l'heure internet
 #define WAITFORLININO 50                   // temps d'attente de démarrage de linino (mini 50s)
 #define SAMPLING_TELEINFO 106                // periode d'échantillonnage de teleinfo 1min,5min, 10min, 15min, 20min, 30min, 60min,106=every day at 6 oclock
 #define NVRAM_SAMPLING_ADDR 0              // Adresse offset Nvram du DS1338 pour la periode d'échantillonage
+#define DATE_STRING_SIZE 25
+#define RX_BUFFER_SIZE 70
+#define DATE_ISO8601 1
+#define DATE_CUSTOM 2
+
 /********************************************************************************
 VARIABLES GLOBALES
 ********************************************************************************/
-String dataString="";
+char date_array[DATE_STRING_SIZE]="";
+String dataString= "";
 char nb=0;
 char current_day,current_hour;
 unsigned long previousMillis ;        // will store last time 
@@ -80,14 +86,14 @@ void loop()
   {
       //mySerial.end();
       #ifdef DEBUG
-      Serial.print("Event Received..!  ");
+      Serial.print(F("Event Received..!  "));
       //Serial.print(nb,DEC);
       Serial.print(' ');
       Serial.println(dataString);
       #endif
       mySerial.flush();
      
-      if(dataString.startsWith("DOOR"))
+      if(dataString.startsWith(F("DOOR")))
       {
         Event.StoreEventDoorToFile = 1;
       }
@@ -97,7 +103,7 @@ void loop()
       }
       
   }
-  
+  delay(2000);
   Srv_Out_Event();
 
     
@@ -134,8 +140,9 @@ uint8_t retour=0;
   delay(20); 
   
   #ifdef DEBUG 
+  Serial.println(F("START DEBUG ...... "));
   retour =  RTC.readnvram(0);
-  Serial.print("Nvram = "); 
+  Serial.print(F("Nvram = ")); 
   Serial.println(retour);
   #endif
   
@@ -170,8 +177,8 @@ String LininoGetTimeStamp() {
   Process time;
   // date is a command line utility to get the date and the time
   // in different formats depending on the additional parameter
-  time.begin("date");
-  time.addParameter("+%D-%T");  // parameters: D for the complete date mm/dd/yy
+  time.begin(F("date"));
+  time.addParameter(F("+%D-%T"));  // parameters: D for the complete date mm/dd/yy
   //             T for the time hh:mm:ss
   time.run();  // run the command
 
@@ -226,3 +233,4 @@ void Blink_Led(unsigned char count)
       delay(100);
     }
 }
+

@@ -3,10 +3,19 @@
 """
 Created on Tue Feb 17 16:40:25 2015
 
- install the following python package
+On the arduino install the packages :
+
+    opkg update #updates the available packages list
+    opkg install distribute #it contains the easy_install command line tool
+    opkg install python-openssl #adds ssl support to python
+    easy_install pip #installs pip
+
+ install the following python package on the arduino
 
  pip install httplib2
  pip install google-api-python-client
+ pip install gspread
+ pip install plotly
 
  first of all :
  create a credential file with the get_credential.py
@@ -19,7 +28,7 @@ Created on Tue Feb 17 16:40:25 2015
  error.log		(tracking errors)
  event.log		(tracking event)...
  
- 
+  No space left on device: '/usr/lib/python2.7/site-packages/pytz-2015.2.dist-info'
 """
 import time             # lib pour gestion heure
 import httplib2         # lib requette http
