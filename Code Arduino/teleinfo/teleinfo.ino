@@ -17,10 +17,10 @@ DEFINITIONS
 #define RTSPIN 6                           // n° de la pin RTS (output)
 #define CTSPIN 5                           // n° de la pin CTS (INPUT)
 #define LEDVERTE 13                        // LED verte pour test
-#define  DEBUG                               // sortie console pour debug
+#define DEBUG                               // sortie console pour debug
 #define HOUR_ADJUST_CHECK 50UL*60UL*1000UL    // interval check pour la maj de l'heure de internet (50 minutes)
 #define HOUR_ADJUST 20                     // heure de la mise a jour de l'heure internet
-#define WAITFORLININO 50                   // temps d'attente de démarrage de linino (mini 50s)
+#define WAITFORLININO 5                   // temps d'attente de démarrage de linino (mini 50s)
 #define SAMPLING_TELEINFO 106                // periode d'échantillonnage de teleinfo 1min,5min, 10min, 15min, 20min, 30min, 60min,106=every day at 6 oclock
 #define NVRAM_SAMPLING_ADDR 0              // Adresse offset Nvram du DS1338 pour la periode d'échantillonage
 #define DATE_STRING_SIZE 25
@@ -32,6 +32,7 @@ VARIABLES GLOBALES
 ********************************************************************************/
 char date_array[DATE_STRING_SIZE]="";
 String dataString= "";
+uint8_t adjust_rtc=HOUR_ADJUST;
 char nb=0;
 char current_day,current_hour;
 unsigned long previousMillis ;        // will store last time 
@@ -232,10 +233,13 @@ out : uint8_t qui represente la valeur lue dans le fichier json
 ************************************************************/
 int run_python_script_config(char *str)
 {
+  String tmpstr="";
   uint8_t tmp;
+  
   Process shell;
   #ifdef DEBUG 
-  Serial.println(F("lecture fichier config.py"));
+  Serial.print(F("lecture fichier config.py "));
+  Serial.println(str);
   Serial.flush();
   #endif
   shell.begin(F("/root/yungauge/scripts/python/config.py"));
@@ -243,9 +247,9 @@ int run_python_script_config(char *str)
   shell.run();
   while (shell.available())
     {
-      dataString += (char)shell.read();
+      tmpstr += (char)shell.read();
     }
-  tmp = dataString.toInt();
+  tmp = tmpstr.toInt();
   Serial.flush();
   return tmp;
 }

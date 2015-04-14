@@ -256,15 +256,17 @@ def check_internet():
     :rtype : int (1 = true 0 = false)
     """
     try:
-        os.system("wget -q www.google.fr")         # pour debloquer websense
+        os.system("wget -q --delete-after www.google.fr")         # pour debloquer websense (quiet and delete after download.
         _ = urllib2.urlopen('http://www.google.fr/', timeout=4)
         print "1"
-        return 1
         log_event("Internet is UP")
+        log_event("RTC time adjusted with internet time")
+        return "1"
     except urllib2.URLError:
         print "0"
-        return 0
         log_event("Internet is Down !")
+        return "0"
+
 # --------------------------------------------------------------------------------------------------
 
 def get_ip_adress():
@@ -326,7 +328,7 @@ def log_event(event_message):
 
 # --------------------------------------------------------------------------------------------------
 
-		
+
 
 # drive_delete_file("0B9Yp8cxBtjfea2xiU3VEblRsaE0")
 # File_Id = drive_insert_file("teleinfo.log",test_folder)
@@ -339,4 +341,3 @@ def log_event(event_message):
 # print str(get_index())
 # put_index(12355)
 # print str(get_index())
-get_ip_adress()

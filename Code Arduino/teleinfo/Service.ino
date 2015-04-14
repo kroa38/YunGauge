@@ -47,10 +47,15 @@ void Srv_WaitForLinino()
     RTC.writeSqwPinMode(SquareWave1HZ);	                      // clignotement de la led toutes les secondes
     jsonvalue = run_python_script_config("sampling_interval");          // lecture du fichier config.json
     RTC.writenvram(NVRAM_SAMPLING_ADDR,jsonvalue);            // periode d'échantillonnage de la teleinfo (en minutes)  
-    
+    adjust_rtc =run_python_script_config("adjust_rtc");       // recupère l'heure à laquelle on ajuste la RTC avec internet
     #ifdef DEBUG 
     jsonvalue =  RTC.readnvram(NVRAM_SAMPLING_ADDR);          // affiche le contenu de la nvram à l'adresse 0
-    Serial.println(jsonvalue);
+    Serial.print("Nvram Sampling Teleinfo every ");  
+    Serial.print(jsonvalue);
+    Serial.println(" minutes");
+    Serial.print("Adjust RTC every day at ");
+    Serial.print(adjust_rtc);
+    Serial.println(" hour");    
     #endif
     
     digitalWrite(BUSYPIN, LOW);        // BUSY = 0 la carte Shield peut demarrer.
@@ -271,13 +276,12 @@ void Srv_StoreEventTeleinfoToFile()
     Serial.println(F("Store to file teleinfo.log ..."));
     #endif
     
-    File dataFile = FileSystem.open("/mnt/sda1/log/teleinfo.log", FILE_APPEND);
+    File dataFile = FileSystem.open("/mnt/sda1/ftp/teleinfo.log", FILE_APPEND);
 
     // if the file is available, write to it:
     if (dataFile) 
     {
 
-      
       #ifdef DEBUG 
       Serial.println(F("File ok...!"));
       #endif
@@ -287,7 +291,7 @@ void Srv_StoreEventTeleinfoToFile()
       dataFile.print(dataString);
       // store event to file
       dataFile.close();
-
+      
       Blink_Led(2);      
        
     }
@@ -324,7 +328,7 @@ void Srv_StoreEventDoorToFile()
     Serial.println(F("Store to file door.log ..."));
     #endif
     
-    File dataFile = FileSystem.open("/mnt/sda1/log/door.log", FILE_APPEND);
+    File dataFile = FileSystem.open("/mnt/sda1/ftp/door.log", FILE_APPEND);
 
     // if the file is available, write to it:
     if (dataFile) 
