@@ -37,6 +37,7 @@ import gspread          # lib for google spreadsheet
 import json             # lib pour fichiers json
 import os.path          # lib pour test fichiers
 import urllib2          # lib pour requettes internet
+import sys
 
 from apiclient.discovery import build
 from apiclient.http import MediaFileUpload
@@ -54,7 +55,10 @@ def oauth2_build(scope):
     :itype : string (scope name)
     :rtype : none
     """
-    storage = Storage('credentials.json')
+    currentpathdir = os.path.dirname(os.path.realpath(__file__))
+    jsonfilename = os.path.join(currentpathdir, "credentials.json")
+
+    storage = Storage(jsonfilename)
     credentials = storage.get()
 
     http_auth = httplib2.Http()
@@ -216,7 +220,10 @@ def gmailcreatemessage(message_text):
     :itype : string text message
     :rtype : string  raw encoded
     """
-    data_email = get_json_data_from_file('config.json')
+    currentpathdir = os.path.dirname(os.path.realpath(__file__))
+    jsonfilename = os.path.join(currentpathdir, "config.json")
+
+    data_email = get_json_data_from_file(jsonfilename)
     message = MIMEText(message_text)
     message['to'] = data_email['dest_mail']
     message['from'] = data_email['source_mail']
@@ -243,18 +250,46 @@ def get_json_data_from_file(file_name):
 # --------------------------------------------------------------------------------------------------
 
 
-def check_connectivity():
+def check_internet():
     """  test cnx internet
     :itype : None
     :rtype : int (1 = true 0 = false)
     """
     try:
+        os.system("wget -q www.google.fr")         # pour debloquer websense
         _ = urllib2.urlopen('http://www.google.fr/', timeout=4)
-        print "true"
+        print "1"
         return 1
+        log_event("Internet is UP")
     except urllib2.URLError:
-        print "false"
+        print "0"
         return 0
+        log_event("Internet is Down !")
+# --------------------------------------------------------------------------------------------------
+
+def get_ip_adress():
+    """"
+    get the current ip address of WLAN and ETH1
+    :itype none
+    :rtype  string
+    """
+    eth_ip = str(os.popen("ifconfig eth1 | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1}'").read()).strip()
+    wlan0_ip = str(os.popen("ifconfig wlan0 | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1}'").read()).strip()
+    ip_string = "ETH1=" + eth_ip + " WLAN0=" + wlan0_ip
+    log_event(ip_string)
+    return ip_string
+
+# --------------------------------------------------------------------------------------------------
+
+def email_ip_addr():
+    """"
+    send by email the IP address
+    :itype none
+    :rtype  string
+    """
+
+    gmailsendmessage(get_ip_adress())
+
 
 # --------------------------------------------------------------------------------------------------
 
@@ -264,9 +299,12 @@ def log_error(error_message):
     :itype : string message
     :rtype : None
     """
+    currentpathdir = os.path.dirname(os.path.realpath(__file__))
+    logfile = os.path.join(currentpathdir, "error.log")
+
     now = str(time.strftime("%c"))
-    f = open("error.log", "a")
-    f.write(now + "    " + error_message + "\r")
+    f = open(logfile, "a")
+    f.write(now + "    " + error_message + "\r\n")
     f.close()
 # --------------------------------------------------------------------------------------------------
 
@@ -276,14 +314,19 @@ def log_event(event_message):
     :itype : string message
     :rtype : None
     """
+    currentpathdir = os.path.dirname(os.path.realpath(__file__))
+    logfile = os.path.join(currentpathdir, "event.log")
+
     now = str(time.strftime("%c"))
-    f = open("event.log", "a")
-    f.write(now + "    " + event_message + "\r")
+    f = open(logfile, "a")
+    f.write(now + "    " + event_message + "\r\n")
     f.close()
+
 
 
 # --------------------------------------------------------------------------------------------------
 
+		
 
 # drive_delete_file("0B9Yp8cxBtjfea2xiU3VEblRsaE0")
 # File_Id = drive_insert_file("teleinfo.log",test_folder)
@@ -292,8 +335,8 @@ def log_event(event_message):
 # print_files_in_folder(folder)
 # gmaillistmessage()
 # gmailsendmessage("test de message")
-# check_connectivity()
+# check_internet()
 # print str(get_index())
 # put_index(12355)
 # print str(get_index())
-
+get_ip_adress()

@@ -2,31 +2,48 @@
 # -*- coding: utf-8 -*-
 
 import sys
-from cloudscope import get_json_data_from_file
-from cloudscope import log_error
+import json             # lib pour fichiers json
+from cloudscope import log_error, log_event, get_json_data_from_file, check_internet, email_ip_addr
+import os
 
-def main(argv):
-    """  cette fonction retourne un paramètre en fonction l'argument passé en entrée
+def main(str_arg):
+    """  
+    cette fonction retourne un paramètre en fonction l'argument passé en entrée
     elle est utilisé par l'arduino pour lire sa config en terme
     d'echantillonnage de la teleinfo et de mise à l'heure de la rtc via internet
-    :itype : argv
-    :rtype : int
-    """
+    :itype : string
+    :rtype : string
 
-    if str(argv[0]) == "sampling_interval":
-        data = get_json_data_from_file("config.json")
-        print data['arduino_config']['sampling_interval']
+    """
+    currentpathdir = os.path.dirname(os.path.realpath(__file__))
+    jsonfilename = os.path.join(currentpathdir, "config.json")
+
+
+    if str_arg == "sampling_interval":
+        jsondata = get_json_data_from_file(jsonfilename)
+        data = jsondata['arduino_config']['sampling_interval']
+        log_event("sampling_interval set to : " + str(data))
+        print str(data)
         exit()
-    if str(argv[0]) == "adjust_rtc":
-        data = get_json_data_from_file("config.json")
-        print data['arduino_config']['adjust_rtc']
+    if str_arg == "adjust_rtc":
+        jsondata = get_json_data_from_file(jsonfilename)
+        data = jsondata['arduino_config']['adjust_rtc']
+        log_event("RTC adjusted everyday at : " + str(data) + "h")
+        print str(data)
+        exit()
+    if str_arg == "check_internet":
+        if check_internet():
+            email_ip_addr()
         exit()
     else:
-        print 0
-        log_error("Mauvais argument passé à config.py")
+        print "0"
+        log_error("Bad argument passed to config.py")
         exit()
 # --------------------------------------------------------------------------------------------------
 
 if __name__ == '__main__':
 
-    main(sys.argv[1:])
+    main(sys.argv[1])
+    #main("check_internet")
+
+

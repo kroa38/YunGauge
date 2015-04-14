@@ -117,9 +117,9 @@ def plotly_test():
     :itype : none
     :rtype : None
     """
-	# Used for ignore the warning InsecurePlatformWarning in python 2.7.3
-	requests.packages.urllib3.disable_warnings()
-	
+    # Used for ignore the warning InsecurePlatformWarning in python 2.7.3
+    requests.packages.urllib3.disable_warnings()
+
     credentials = tls.get_credentials_file()
     trace0 = Scatter(x=[1, 2, 3, 4],y=[50, 15, 23, 17])
     trace1 = Scatter(x=[1, 2, 3, 4],y=[161, 500, 511, 999])
@@ -135,7 +135,9 @@ if __name__ == '__main__':
     :itype :
     :rtype : None
     """
-    plotly_test()
+    #total = len(sys.argv)
+	
+    #plotly_test()
     # worksheet()
     # cvs_to_json()
     #plotlytest()

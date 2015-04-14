@@ -17,7 +17,7 @@ DEFINITIONS
 #define RTSPIN 6                           // n° de la pin RTS (output)
 #define CTSPIN 5                           // n° de la pin CTS (INPUT)
 #define LEDVERTE 13                        // LED verte pour test
-#undef  DEBUG                               // sortie console pour debug
+#define  DEBUG                               // sortie console pour debug
 #define HOUR_ADJUST_CHECK 50UL*60UL*1000UL    // interval check pour la maj de l'heure de internet (50 minutes)
 #define HOUR_ADJUST 20                     // heure de la mise a jour de l'heure internet
 #define WAITFORLININO 50                   // temps d'attente de démarrage de linino (mini 50s)
@@ -27,7 +27,6 @@ DEFINITIONS
 #define RX_BUFFER_SIZE 70
 #define DATE_ISO8601 1
 #define DATE_CUSTOM 2
-
 /********************************************************************************
 VARIABLES GLOBALES
 ********************************************************************************/
@@ -112,47 +111,41 @@ void loop()
 FONCTION GeneralInit()
 ********************************************************************************/
 void GeneralInit() {
-uint8_t retour=0;
-
+  
   previousMillis=millis();        // on recupère le temps depuis le demarrage de la carte
   pinMode(BUSYPIN, OUTPUT);
   pinMode(LEDVERTE, OUTPUT);
   pinMode(CTSPIN, INPUT);
   pinMode(RTSPIN, OUTPUT);  
-  digitalWrite(BUSYPIN, HIGH);        // BUSY = 1 la carte Shield est en pause.
-  digitalWrite(LEDVERTE, LOW);        // led status event
-  ClearToSend();                      // libère la ligne I2C
+  digitalWrite(BUSYPIN, HIGH);          // BUSY = 1 la carte Shield est en pause.
+  digitalWrite(LEDVERTE, LOW);          // led status event
+  ClearToSend();                        // libère la ligne I2C
  
   #ifdef DEBUG
-  Serial.begin(115200);                 // init UART pour debug via USB.
-  while (!Serial);         // wait for serial port to connect. 
+  Serial.begin(115200);                // init UART pour debug via USB.
+  while (!Serial);                     // wait for serial port to connect. 
+  Serial.println(F("START DEBUG ...... "));
   #endif
   
-  Wire.begin();            // init I2C
-  Bridge.begin();          // init Bridge
-  FileSystem.begin();      // init file system 
-  mySerial.begin(19200);   // réception de la téléinfo à 19200 bauds
+  Wire.begin();                        // init I2C
+  Bridge.begin();                      // init Bridge
+  FileSystem.begin();                  // init file system 
+  mySerial.begin(19200);               // réception de la téléinfo à 19200 bauds
   
   RequestToSend();
   RTC.writeSqwPinMode(OFF);           // led off de la RTC au demarrage
-  delay(20);
-  RTC.writenvram(NVRAM_SAMPLING_ADDR,SAMPLING_TELEINFO);          // periode d'échantillonnage de la teleinfo (en minutes)
   delay(20); 
-  
-  #ifdef DEBUG 
-  Serial.println(F("START DEBUG ...... "));
-  retour =  RTC.readnvram(0);
-  Serial.print(F("Nvram = ")); 
-  Serial.println(retour);
-  #endif
-  
   ClearToSend();
   
-  Event.WaitForLinino = 1;  // on attend que Linino soit demarré (~ 50 secondes)
+  Event.WaitForLinino = 1;            // on attend que Linino soit demarré (~ 50 secondes)
     
 }
 /********************************************************************************
 FONCTION ProcExec
+Lance un process 
+In : String  (nom du process)
+In : Parametre du process
+Out : String
 ********************************************************************************/
 String ProcExec(String Comm, String Par) {
   String Res = "";
@@ -213,9 +206,7 @@ Libère la ligne RTS
 *******************************************************************************/
 void ClearToSend(void)
 {
-  
     digitalWrite(RTSPIN, LOW); 
-
 }
 /***********************************************************
 void Blink_Led(unsigned char count)
@@ -232,5 +223,30 @@ void Blink_Led(unsigned char count)
       digitalWrite(LEDVERTE, LOW);    // turn the LED off by making the voltage LOW
       delay(100);
     }
+}
+/***********************************************************
+int run_python_script_config(char *str)
+Lit dans le fichier config.json la valeur du paramètre passé
+In : pointeur de chaine de caracteres
+out : uint8_t qui represente la valeur lue dans le fichier json
+************************************************************/
+int run_python_script_config(char *str)
+{
+  uint8_t tmp;
+  Process shell;
+  #ifdef DEBUG 
+  Serial.println(F("lecture fichier config.py"));
+  Serial.flush();
+  #endif
+  shell.begin(F("/root/yungauge/scripts/python/config.py"));
+  shell.addParameter(str);
+  shell.run();
+  while (shell.available())
+    {
+      dataString += (char)shell.read();
+    }
+  tmp = dataString.toInt();
+  Serial.flush();
+  return tmp;
 }
 

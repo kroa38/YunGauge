@@ -7,7 +7,6 @@ void Srv_Out_Event(void)
    Srv_WaitForLinino();
    Srv_PingGoogle();
    Srv_Ntp_To_Rtc_Update();
-   Srv_Email_Ip_Address();
    Srv_PrintRtcDate();
    Srv_StoreEventTeleinfoToFile();
    Srv_StoreEventDoorToFile();
@@ -20,6 +19,8 @@ attente de demarrage de Linino
 ************************************************************/
 void Srv_WaitForLinino()
 {
+  uint8_t jsonvalue;
+  
   if(Event.WaitForLinino)
   {
     Event.WaitForLinino=0;
@@ -38,77 +39,64 @@ void Srv_WaitForLinino()
     }
     
     #ifdef DEBUG
-    Serial.println("");
+    Serial.println(F(""));
     Serial.println(F("Linux is ready "));
     #endif
+    
     RequestToSend();
-    RTC.writeSqwPinMode(SquareWave1HZ);	
-    ClearToSend();
+    RTC.writeSqwPinMode(SquareWave1HZ);	                      // clignotement de la led toutes les secondes
+    jsonvalue = run_python_script_config("sampling_interval");          // lecture du fichier config.json
+    RTC.writenvram(NVRAM_SAMPLING_ADDR,jsonvalue);            // periode d'échantillonnage de la teleinfo (en minutes)  
+    
+    #ifdef DEBUG 
+    jsonvalue =  RTC.readnvram(NVRAM_SAMPLING_ADDR);          // affiche le contenu de la nvram à l'adresse 0
+    Serial.println(jsonvalue);
+    #endif
     
     digitalWrite(BUSYPIN, LOW);        // BUSY = 0 la carte Shield peut demarrer.
     Event.PingGoogle = 1;  // on peut pinger google pour mettre à jour l'heure
+    ClearToSend();  
   }
 }
 
-/***********************************************************
-String pingGoogle(void) 
-Ping pour connaitre l'etat d'internet
-retourne 1 si internet ok sinon retourne 0
-************************************************************/
-char Srv_PingGoogle(void) 
+/**********************************************************************
+void Srv_PingGoogle(void) 
+permet de savoir si internet est On ou OFF
+le script en python envoie par email l'adresse IP
+si le resultat est OK alors on met a jour la RTC avec l'heure internet
+In: void
+Out : uint8_t (1 : internet ON   0: Internet OFF)
+************************************************************************/
+uint8_t Srv_PingGoogle(void) 
 {
   if(Event.PingGoogle)
   {
+    uint8_t check_internet;
     Event.PingGoogle=0;
-    
-    Process shell;
-    String result="";
-    char retval;
-    
-    #ifdef DEBUG
-    Serial.println(F("Run shell script ping")); 
-    #endif    
-
-    shell.begin(F("/mnt/sda1/shell/pingoo.sh"));
-    shell.run();
-
-    while(shell.available())
-    {
-      result += (char)shell.read();
-    }
-    Serial.flush();
-   
+    check_internet = run_python_script_config("check_internet");
+      
     #ifdef DEBUG
     Serial.print(F("Google Ping Result : ")); 
-    Serial.println(result[0]);
+    Serial.println(check_internet);
     #endif
     
-    if(result[0] == '0')
-    {
-      
+    if(check_internet == 0)
+    {      
       #ifdef DEBUG
       Serial.println(F("No internet connexion !"));
-      Event.PrintRtcDate=1;
       #endif
-    
-      retval=0;
+      Event.Ntp_To_Rtc_Update = 0;
     }
-    else if(result[0] == '1')
+    else if(check_internet == 1)
     {
       #ifdef DEBUG
-      Serial.println(F("Internet Ok"));     
+      Serial.println(F("Internet is UP"));     
       #endif
-      
-      retval=1;
       Event.Ntp_To_Rtc_Update = 1;
     }
-    
-    return(retval);
+    return check_internet;
   }
-  else
-  {
-    return(0);
-  }
+
 }
 
 
@@ -159,7 +147,7 @@ void Srv_Ntp_To_Rtc_Update()
     RequestToSend();    
     RTC.adjust(DateTime(dt[0],dt[1],dt[2],dt[3],dt[4],dt[5]));
     ClearToSend();
-    Event.Email_Ip_Address=1;
+
     Blink_Led(10); 
     
     #ifdef DEBUG
@@ -168,28 +156,7 @@ void Srv_Ntp_To_Rtc_Update()
 
     }
 }
-/***********************************************************
-char Srv_Email_Ip_Address(void)
-envoie l'adress ip du yun par email
-************************************************************/
-void Srv_Email_Ip_Address(void) 
-{
-  if(Event.Email_Ip_Address)
-  {
-    Event.Email_Ip_Address=0;
-    
-    Process shell;
-    String result="";
-    char retval;
-    
-    #ifdef DEBUG
-    Serial.println(F("Email Yun IP address")); 
-    #endif    
 
-    shell.begin(F("/mnt/sda1/shell/my_ip.sh"));
-    shell.run();
-    }
- }
 /***********************************************************
 void Srv_PrintLininoDate()
 Print sur la console uart la date et l'heure de Linino.
