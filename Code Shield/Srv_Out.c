@@ -224,7 +224,7 @@ void Srv_Out_Event_Filter_Teleinfo(void)
                         S_Srv_Event.bTrameFilteredNotOk=0;  
                         tramefiltercount=0;
                         
-                        
+                        /*
                         // calcul la difference par rapport à la mesure précédente de HP 
                         Calc_Diff(&previous_hp,ptr_hchp+5,tab_diff_hp);
                         Drv_Uart0_Shift_Tab(tab_diff_hp);       // elimine les zero de l'entête de la chaine
@@ -235,7 +235,7 @@ void Srv_Out_Event_Filter_Teleinfo(void)
                         DrvLed_Led_On(LED_ROUGE);         
                         DrvTime_Wait_Millisecondes(500UL); 
                         DrvLed_Led_Off(LED_ROUGE);
-
+                        */
                        }
                    }             
                }
@@ -296,7 +296,7 @@ void Srv_Out_Event_Send_Teleinfo_to_Arduino(void)
    if (S_Srv_Event.bTrameFilteredOk)                       // si interruption reception de trame complète
         { 
 
-          char Tmp_Buffer_Water[DIFF_COUNTER_LENGTH+1];
+          //char Tmp_Buffer_Water[DIFF_COUNTER_LENGTH+1];
           char OutputBuffer[OUTPUT_BUFFER_SIZE];
           S_Srv_Event.bTrameFilteredOk=0;      
           
@@ -304,25 +304,25 @@ void Srv_Out_Event_Send_Teleinfo_to_Arduino(void)
           {
             OutputBuffer[i]=0;
           }
-          for ( Int8U i=0; i<DIFF_COUNTER_LENGTH+1; i++ )
-          {
-            Tmp_Buffer_Water[i]=0;
-          }
+          //for ( Int8U i=0; i<DIFF_COUNTER_LENGTH+1; i++ )
+          //{
+          //  Tmp_Buffer_Water[i]=0;
+          //}
           
           strcpy(OutputBuffer,(ptr_hchp+5));            // ajout de la valeur HP ex 001524512 (9 caractères)
           strcat(OutputBuffer,",");                     // ajout virgule de séparation des champs CSV.
-          strcat(OutputBuffer,tab_diff_hp);             // ajout envoie la difference hp 
-          strcat(OutputBuffer,",");                     // ajout virgule de séparation des champs CSV.  
+          //strcat(OutputBuffer,tab_diff_hp);             // ajout envoie la difference hp 
+          //strcat(OutputBuffer,",");                     // ajout virgule de séparation des champs CSV.  
           strcat(OutputBuffer,(ptr_hchc+5));            // ajout on renvoi uniquement la valeur HC ex 007524415 (9 caractères)
           strcat(OutputBuffer,",");                     // ajout virgule de séparation des champs CSV. 
-          strcat(OutputBuffer,tab_diff_hc);             // ajout envoie la difference hc           
-          strcat(OutputBuffer,",");                     // ajout virgule de séparation des champs CSV. 
+          //strcat(OutputBuffer,tab_diff_hc);             // ajout envoie la difference hc           
+          //strcat(OutputBuffer,",");                     // ajout virgule de séparation des champs CSV. 
           strcat(OutputBuffer,(ptr_ptec+5));            // ajout on renvoi uniquement HP ou HC (2 caractères)
-          strcat(OutputBuffer,",");                     // ajout virgule de séparation des champs CSV.
+          //strcat(OutputBuffer,",");                     // ajout virgule de séparation des champs CSV.
           
-          Drv_Uart0_Int32_To_Ascii((Int32U)(WaterCounter),Tmp_Buffer_Water);
-          Drv_Uart0_Shift_Tab(Tmp_Buffer_Water);       // elimine les zero de l'entête de la chaine
-          strcat(OutputBuffer,Tmp_Buffer_Water);         // ajout du comptage en eau écoulé depuis la dernière mesure ( 2 carcatères)
+          //Drv_Uart0_Int32_To_Ascii((Int32U)(WaterCounter),Tmp_Buffer_Water);
+          //Drv_Uart0_Shift_Tab(Tmp_Buffer_Water);       // elimine les zero de l'entête de la chaine
+          //strcat(OutputBuffer,Tmp_Buffer_Water);         // ajout du comptage en eau écoulé depuis la dernière mesure ( 2 carcatères)
           
           Drv_Uart0_Init_Uart_Tx();                      // active le transmetteur RS-232            
           
