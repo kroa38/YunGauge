@@ -13,16 +13,17 @@
 /********************************************************************************
 DEFINITIONS
 ********************************************************************************/
-#define BUSYPIN 4                          // n° de la pin Busy
-#define RTSPIN 6                           // n° de la pin RTS (output)
-#define CTSPIN 5                           // n° de la pin CTS (INPUT)
-#define LEDVERTE 13                        // LED verte pour test
+#define BUSYPIN 4                           // n° de la pin Busy
+#define RTSPIN 6                            // n° de la pin RTS (output)
+#define CTSPIN 5                            // n° de la pin CTS (INPUT)
+#define LEDVERTE 13                         // LED verte pour test
 #define DEBUG                               // sortie console pour debug
-#define HOUR_ADJUST_CHECK 50UL*60UL*1000UL    // interval check pour la maj de l'heure de internet (50 minutes)
-#define HOUR_ADJUST 20                     // heure de la mise a jour de l'heure internet
-#define WAITFORLININO 5                   // temps d'attente de démarrage de linino (mini 50s)
-#define SAMPLING_TELEINFO 106                // periode d'échantillonnage de teleinfo 1min,5min, 10min, 15min, 20min, 30min, 60min,106=every day at 6 oclock
-#define NVRAM_SAMPLING_ADDR 0              // Adresse offset Nvram du DS1338 pour la periode d'échantillonage
+#define HOUR_ADJUST_CHECK 50UL*60UL*1000UL  // interval check pour la maj de l'heure de internet (50 minutes)
+#define HOUR_ADJUST_CHECK_THIN 1UL*60UL*1000UL  // interval check pour la maj de l'heure de internet (1 minutes)
+#define HOUR_ADJUST 20                      // heure de la mise a jour de l'heure internet
+#define WAITFORLININO 5                     // temps d'attente de démarrage de linino (mini 50s)
+#define SAMPLING_TELEINFO 106               // periode d'échantillonnage de teleinfo 1min,5min, 10min, 15min, 20min, 30min, 60min,106=every day at 6 oclock
+#define NVRAM_SAMPLING_ADDR 0               // Adresse offset Nvram du DS1338 pour la periode d'échantillonage
 #define DATE_STRING_SIZE 25
 #define RX_BUFFER_SIZE 70
 #define DATE_ISO8601 1
@@ -33,19 +34,19 @@ VARIABLES GLOBALES
 char date_array[DATE_STRING_SIZE]="";
 String dataString= "";
 uint8_t adjust_rtc=HOUR_ADJUST;
-char nb=0;
+//char nb=0;
 char current_day,current_hour;
 unsigned long previousMillis ;        // will store last time 
 struct Evenements
 {
      unsigned char Ntp_To_Rtc_Update            : 1;
      unsigned char PingGoogle   		: 1;
-     unsigned char WaitForLinino		: 1;
-     unsigned char PrintRtcDate	                : 1;
-     unsigned char PrintLininoDate              : 1;
      unsigned char StoreEventTeleinfoToFile     : 1;
      unsigned char StoreEventDoorToFile         : 1;  
-     unsigned char Email_Ip_Address      	: 1; 
+     unsigned char Ntp_To_RTC_OK        	: 1; 
+     unsigned char dummy_one	                : 1;
+     unsigned char dummy_two	                : 1;  
+     unsigned char dummy_tree	                : 1;     
 };
 
 Evenements Event = {0};
@@ -67,7 +68,7 @@ FONCTION LOOP
 void loop() 
 {
 
-  nb=0;
+  char nb=0;
   dataString = "";
   char MsgChar;
   
@@ -137,8 +138,8 @@ void GeneralInit() {
   RTC.writeSqwPinMode(OFF);           // led off de la RTC au demarrage
   delay(20); 
   ClearToSend();
-  
-  Event.WaitForLinino = 1;            // on attend que Linino soit demarré (~ 50 secondes)
+  Event.Ntp_To_RTC_OK =0;             // on n'a pas encore mis à jour l'heure par internet
+  WaitForLinino();                    // on attend que Linino soit demarré (~ 50 secondes)
     
 }
 /********************************************************************************
@@ -253,4 +254,150 @@ int run_python_script_config(char *str)
   Serial.flush();
   return tmp;
 }
+/***********************************************************
+void Srv_PrintRtcDate()
+Print sur la console uart la date. (debug uniquement)
+************************************************************/
+void PrintRtcDate()
+{
+    #ifdef DEBUG
+    RequestToSend();    
+    DateTime now = RTC.now(); 
+    ClearToSend();    
+    
+    Serial.print(F("RTC Date: "));
+    Serial.print(now.day(), DEC);
+    Serial.print('/');
+    Serial.print(now.month(), DEC);
+    Serial.print('/');
+    Serial.print(now.year(), DEC);
+    Serial.print(' ');
+    Serial.print(now.hour(), DEC);
+    Serial.print(':');
+    Serial.print(now.minute(), DEC);
+    Serial.print(':');
+    Serial.print(now.second(), DEC);
+    Serial.println();
+    #endif
 
+}
+/***********************************************************
+void *getdate()
+
+renvoie la date au format ISO8601 ou CUSTOM
+dans le tableau date_array
+in : format
+out : pointeur vers date_array (variable globale)
+************************************************************/
+char *getdate(char format)
+{
+  for(char i=0;i<WAITFORLININO;i++)
+  {
+    date_array[i] = 0;
+  }
+    
+  RequestToSend();
+  DateTime now = RTC.now();
+  ClearToSend();
+  
+  if(format==DATE_ISO8601)
+  {
+    String str = String(now.year(), DEC); 
+    str += '-';
+    str += String(now.month(), DEC);
+    str += '-';
+    str += String(now.day(), DEC);  
+    str += 'T';  
+    str += String(now.hour(), DEC); 
+    str += ':';
+    str += String(now.minute(), DEC);
+    str += ':'; 
+    str += String(now.second(), DEC); 
+    str += String("+0100");
+    
+    str.toCharArray(date_array,25);
+    
+    return date_array;
+  }
+  else if(format==DATE_CUSTOM)
+  {
+    String str = String(now.day(), DEC); 
+    str += '/';
+    str += String(now.month(), DEC);
+    str += '/';
+    str += String(now.year(), DEC);  
+    str += ',';  
+    str += String(now.hour(), DEC); 
+    str += ':';
+    str += String(now.minute(), DEC);
+    
+    str.toCharArray(date_array,25);
+    
+    return date_array;    
+  }
+}
+/***********************************************************
+void Srv_PrintLininoDate()
+Print sur la console uart la date et l'heure de Linino.
+************************************************************/
+void PrintLininoDate()
+{
+    #ifdef DEBUG
+    String DateL = "";
+    String TimeL = "";
+    
+    DateL = ProcExec(F("date"),F("+%Y-%m-%d %T"));
+    TimeL = ProcExec("date","+%T");    
+
+    Serial.print(F("Linino Date: "));
+    Serial.println(DateL);
+    Serial.print("  ");    
+    Serial.println(TimeL);
+    #endif
+}
+/***********************************************************
+void WaitForLinino()
+attente de demarrage de Linino ~50s
+************************************************************/
+void WaitForLinino()
+{
+  uint8_t jsonvalue;
+
+    
+    #ifdef DEBUG
+    Serial.println(F("Wait for Linino"));
+    #endif
+	
+    for(int i=0;i<WAITFORLININO;i++)
+    {
+      Blink_Led(1);
+      #ifdef DEBUG
+      Serial.print(F("."));
+      #endif
+      delay(1000);
+    }
+    
+    #ifdef DEBUG
+    Serial.println(F(""));
+    Serial.println(F("Linux is ready "));
+    #endif
+    
+    RequestToSend();
+    RTC.writeSqwPinMode(SquareWave1HZ);	                      // clignotement de la led toutes les secondes
+    jsonvalue = run_python_script_config("sampling_interval");          // lecture du fichier config.json
+    RTC.writenvram(NVRAM_SAMPLING_ADDR,jsonvalue);            // periode d'échantillonnage de la teleinfo (en minutes)  
+    adjust_rtc =run_python_script_config("adjust_rtc");       // recupère l'heure à laquelle on ajuste la RTC avec internet
+    #ifdef DEBUG 
+    jsonvalue =  RTC.readnvram(NVRAM_SAMPLING_ADDR);          // affiche le contenu de la nvram à l'adresse 0
+    Serial.print("Nvram Sampling Teleinfo every ");  
+    Serial.print(jsonvalue);
+    Serial.println(" minutes");
+    Serial.print("Adjust RTC every day at ");
+    Serial.print(adjust_rtc);
+    Serial.println(" hour");    
+    #endif
+    
+    digitalWrite(BUSYPIN, LOW);        // BUSY = 0 la carte Shield peut demarrer.
+    ClearToSend();  
+
+}

@@ -4,65 +4,14 @@ Fonction de gestion des evenements
 ************************************************************/
 void Srv_Out_Event(void)
 {
-   Srv_WaitForLinino();
+   Srv_AdjustDateEveryDay();   
    Srv_PingGoogle();
    Srv_Ntp_To_Rtc_Update();
-   Srv_PrintRtcDate();
    Srv_StoreEventTeleinfoToFile();
    Srv_StoreEventDoorToFile();
-   Srv_AdjustDateEveryDay();
    
 }
-/***********************************************************
-void WaitForLinino()
-attente de demarrage de Linino
-************************************************************/
-void Srv_WaitForLinino()
-{
-  uint8_t jsonvalue;
-  
-  if(Event.WaitForLinino)
-  {
-    Event.WaitForLinino=0;
-    
-    #ifdef DEBUG
-    Serial.println(F("Wait for Linino"));
-    #endif
-	
-    for(int i=0;i<WAITFORLININO;i++)
-    {
-      Blink_Led(1);
-      #ifdef DEBUG
-      Serial.print(F("."));
-      #endif
-      delay(1000);
-    }
-    
-    #ifdef DEBUG
-    Serial.println(F(""));
-    Serial.println(F("Linux is ready "));
-    #endif
-    
-    RequestToSend();
-    RTC.writeSqwPinMode(SquareWave1HZ);	                      // clignotement de la led toutes les secondes
-    jsonvalue = run_python_script_config("sampling_interval");          // lecture du fichier config.json
-    RTC.writenvram(NVRAM_SAMPLING_ADDR,jsonvalue);            // periode d'échantillonnage de la teleinfo (en minutes)  
-    adjust_rtc =run_python_script_config("adjust_rtc");       // recupère l'heure à laquelle on ajuste la RTC avec internet
-    #ifdef DEBUG 
-    jsonvalue =  RTC.readnvram(NVRAM_SAMPLING_ADDR);          // affiche le contenu de la nvram à l'adresse 0
-    Serial.print("Nvram Sampling Teleinfo every ");  
-    Serial.print(jsonvalue);
-    Serial.println(" minutes");
-    Serial.print("Adjust RTC every day at ");
-    Serial.print(adjust_rtc);
-    Serial.println(" hour");    
-    #endif
-    
-    digitalWrite(BUSYPIN, LOW);        // BUSY = 0 la carte Shield peut demarrer.
-    Event.PingGoogle = 1;  // on peut pinger google pour mettre à jour l'heure
-    ClearToSend();  
-  }
-}
+
 
 /**********************************************************************
 void Srv_PingGoogle(void) 
@@ -154,72 +103,16 @@ void Srv_Ntp_To_Rtc_Update()
     ClearToSend();
 
     Blink_Led(10); 
-    
+    Event.Ntp_To_RTC_OK = 1;
     #ifdef DEBUG
-    Event.PrintRtcDate=1;
+    PrintRtcDate();
     #endif
 
     }
 }
 
-/***********************************************************
-void Srv_PrintLininoDate()
-Print sur la console uart la date et l'heure de Linino.
-************************************************************/
-void Srv_PrintLininoDate()
-{
- if(Event.PrintLininoDate)
-  {
-    Event.PrintLininoDate=0;
- 
-    String DateL = "";
-    String TimeL = "";
-    
-    DateL = ProcExec(F("date"),F("+%Y-%m-%d %T"));
-    TimeL = ProcExec("date","+%T");    
 
-    Serial.print(F("Linino Date: "));
-    Serial.println(DateL);
-    Serial.print("  ");    
-    Serial.println(TimeL);
-  }
 
-}
-/***********************************************************
-void Srv_PrintRtcDate()
-Print sur la console uart la date.
-************************************************************/
-void Srv_PrintRtcDate()
-{
-
- if(Event.PrintRtcDate)
- {   
-    Event.PrintRtcDate=0;
-    
-    RequestToSend();    
-    DateTime now = RTC.now(); 
-    ClearToSend();    
-    
-    Event.PrintRtcDate=0;
-    Serial.print(F("RTC Date: "));
-    Serial.print(now.day(), DEC);
-    Serial.print('/');
-    Serial.print(now.month(), DEC);
-    Serial.print('/');
-    Serial.print(now.year(), DEC);
-    Serial.print(' ');
-    Serial.print(now.hour(), DEC);
-    Serial.print(':');
-    Serial.print(now.minute(), DEC);
-    Serial.print(':');
-    Serial.print(now.second(), DEC);
-    Serial.println();
-    
-
-    
- }
- 
-}
 /***********************************************************
 void Srv_AdjustDateEveryDay()
 
@@ -228,11 +121,16 @@ ajuste la RTC avec l'heure de linino.
 void Srv_AdjustDateEveryDay()
 {
 
-  unsigned long currentMillis ;
+  unsigned long currentMillis,adjust_at ;
+  
+  if(Event.Ntp_To_RTC_OK)              // si heure deja ajusté
+    adjust_at = HOUR_ADJUST_CHECK;     // on ajuste alors à 20H
+  else
+    adjust_at = HOUR_ADJUST_CHECK_THIN;    // sinon on retente toute les 2 minutes
   
   currentMillis = millis();
  
-  if((currentMillis - previousMillis) > HOUR_ADJUST_CHECK) 
+  if((currentMillis - previousMillis) > adjust_at) 
   {
      #ifdef DEBUG
       Serial.println(F("HOUR_ADJUST_CHECK..."));
@@ -363,60 +261,6 @@ void Srv_StoreEventDoorToFile()
   }
   
 }
-/***********************************************************
-void *getdate()
 
-renvoie la date au format ISO8601 ou CUSTOM
-dans le tableau date_array
-in : format
-out : pointeur vers date_array (variable globale)
-************************************************************/
-char *getdate(char format)
-{
-  for(char i=0;i<WAITFORLININO;i++)
-  {
-    date_array[i] = 0;
-  }
-    
-  RequestToSend();
-  DateTime now = RTC.now();
-  ClearToSend();
-  
-  if(format==DATE_ISO8601)
-  {
-    String str = String(now.year(), DEC); 
-    str += '-';
-    str += String(now.month(), DEC);
-    str += '-';
-    str += String(now.day(), DEC);  
-    str += 'T';  
-    str += String(now.hour(), DEC); 
-    str += ':';
-    str += String(now.minute(), DEC);
-    str += ':'; 
-    str += String(now.second(), DEC); 
-    str += String("+0100");
-    
-    str.toCharArray(date_array,25);
-    
-    return date_array;
-  }
-  else if(format==DATE_CUSTOM)
-  {
-    String str = String(now.day(), DEC); 
-    str += '/';
-    str += String(now.month(), DEC);
-    str += '/';
-    str += String(now.year(), DEC);  
-    str += ',';  
-    str += String(now.hour(), DEC); 
-    str += ':';
-    str += String(now.minute(), DEC);
-    
-    str.toCharArray(date_array,25);
-    
-    return date_array;    
-  }
-}
   
 
