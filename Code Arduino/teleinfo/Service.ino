@@ -124,33 +124,46 @@ void Srv_AdjustDateEveryDay()
   unsigned long currentMillis,adjust_at ;
   
   if(Event.Ntp_To_RTC_OK)              // si heure deja ajusté
-    adjust_at = HOUR_ADJUST_CHECK;     // on ajuste alors à 20H
+    adjust_at = HOUR_ADJUST_CHECK;     // on check toutes les 50minutes
   else
     adjust_at = HOUR_ADJUST_CHECK_THIN;    // sinon on retente toute les 2 minutes
   
   currentMillis = millis();
  
   if((currentMillis - previousMillis) > adjust_at) 
-  {
+  {    
+    
      #ifdef DEBUG
       Serial.println(F("HOUR_ADJUST_CHECK..."));
      #endif
-    RequestToSend();
-    DateTime now = RTC.now();
-    ClearToSend();      
-    
-    // save the last time you update
-    previousMillis = currentMillis; 
-    
-    if(now.hour() == HOUR_ADJUST)
-    {
-      // on peut pinger google pour mettre à jour l'heure  
-      Event.PingGoogle = 1;  
-      
-      #ifdef DEBUG
-      Serial.println(F("Adjust Date and Time from Internet at 20h"));
-      #endif
-    }
+     
+      if(Event.Ntp_To_RTC_OK) 
+       { 
+          RequestToSend();
+          DateTime now = RTC.now();
+          ClearToSend();      
+          
+          // save the last time you update
+          previousMillis = currentMillis; 
+          
+          if(now.hour() == HOUR_ADJUST)
+          {
+              // on peut pinger google pour mettre à jour l'heure  
+              Event.PingGoogle = 1;  
+              
+              #ifdef DEBUG
+              Serial.println(F("Adjust Date and Time from Internet at 20h"));
+              #endif
+          }
+      }
+      else
+      {
+        Event.PingGoogle = 1;  
+        #ifdef DEBUG
+        Serial.println(F("Try to update RTC from Internet..."));
+        #endif
+      }
+        
   }
   
 }
@@ -183,7 +196,7 @@ void Srv_StoreEventTeleinfoToFile()
       #ifdef DEBUG 
       Serial.println(F("File ok...!"));
       #endif
-      //construct string
+      //construct stringll
       dataString += ',';
       dataString += getdate(DATE_ISO8601);
       dataFile.print(dataString);
