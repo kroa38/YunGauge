@@ -1,5 +1,6 @@
 *.log
 *.csv
 *.json
+*.pyc
 teleinfo.db
 libraries/

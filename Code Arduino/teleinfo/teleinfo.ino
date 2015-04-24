@@ -21,7 +21,7 @@ DEFINITIONS
 #define HOUR_ADJUST_CHECK 50UL*60UL*1000UL  // interval check pour la maj de l'heure de internet (50 minutes)
 #define HOUR_ADJUST_CHECK_THIN 1UL*60UL*1000UL  // interval check pour la maj de l'heure de internet (1 minutes)
 #define HOUR_ADJUST 20                      // heure de la mise a jour de l'heure internet
-#define WAITFORLININO 5                     // temps d'attente de démarrage de linino (mini 50s)
+#define WAITFORLININO  60                    // temps d'attente de démarrage de linino (mini 50s)
 #define SAMPLING_TELEINFO 106               // periode d'échantillonnage de teleinfo 1min,5min, 10min, 15min, 20min, 30min, 60min,106=every day at 6 oclock
 #define NVRAM_SAMPLING_ADDR 0               // Adresse offset Nvram du DS1338 pour la periode d'échantillonage
 #define DATE_STRING_SIZE 25
@@ -82,7 +82,7 @@ void loop()
    nb+=1;
    }
   }
-  
+  mySerial.flush();
   if(nb)
   {
       //mySerial.end();
@@ -103,8 +103,10 @@ void loop()
         Event.StoreEventTeleinfoToFile = 1;
       }
       
+      
   }
-  delay(2000);
+  //delay(2000);
+
   Srv_Out_Event();
 
     

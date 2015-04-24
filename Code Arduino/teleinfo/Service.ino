@@ -158,6 +158,7 @@ void Srv_AdjustDateEveryDay()
       }
       else
       {
+        previousMillis = currentMillis;
         Event.PingGoogle = 1;  
         #ifdef DEBUG
         Serial.println(F("Try to update RTC from Internet..."));
