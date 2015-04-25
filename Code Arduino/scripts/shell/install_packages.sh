@@ -1,11 +1,12 @@
 #!/bin/sh
+opkg update
 opkg install bzip2
 opkg install unzip
 opkg install tar
 opkg install wget
 opkg install fdisk
 opkg install e2fsprogs
-opkg install vsftp
+opkg install vsftpd
 opkg install pyopenssl
 opkg install python-openssl
 opkg install python-crypto
