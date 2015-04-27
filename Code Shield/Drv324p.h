@@ -46,9 +46,9 @@ typedef volatile struct Struct_Atmega_Int {
 
 //  ------------- PORT B -------------------------
 
-#define TIC_AVR_DIR                 DDRB_DDB0             // Est aussi un interruption PCINT8  -> PCIE1
-#define TIC_AVR_PORT                PORTB_PORTB0
-#define TIC_AVR_PIN                 PINB_PINB0            // lecture KEY Read S2
+#define BUSY_AVR_DIR                 DDRB_DDB0             // Est aussi un interruption PCINT8  -> PCIE1
+#define BUSY_AVR_PORT                PORTB_PORTB0
+#define BUSY_AVR_PIN                 PINB_PINB0            // lecture KEY Read S2
 
 #define LED_ROUGE_DIR                DDRB_DDB1
 #define LED_ROUGE_PORT               PORTB_PORTB1

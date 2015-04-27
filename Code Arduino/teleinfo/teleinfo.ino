@@ -20,8 +20,7 @@ DEFINITIONS
 #define DEBUG                               // sortie console pour debug
 #define HOUR_ADJUST_CHECK 50UL*60UL*1000UL  // interval check pour la maj de l'heure de internet (50 minutes)
 #define HOUR_ADJUST_CHECK_THIN 1UL*60UL*1000UL  // interval check pour la maj de l'heure de internet (1 minutes)
-#define HOUR_ADJUST 20                      // heure de la mise a jour de l'heure internet
-#define WAITFORLININO  60                    // temps d'attente de démarrage de linino (mini 50s)
+#define WAITFORLININO  6                    // temps d'attente de démarrage de linino (mini 50s)
 #define SAMPLING_TELEINFO 106               // periode d'échantillonnage de teleinfo 1min,5min, 10min, 15min, 20min, 30min, 60min,106=every day at 6 oclock
 #define NVRAM_SAMPLING_ADDR 0               // Adresse offset Nvram du DS1338 pour la periode d'échantillonage
 #define DATE_STRING_SIZE 25
@@ -33,7 +32,7 @@ VARIABLES GLOBALES
 ********************************************************************************/
 char date_array[DATE_STRING_SIZE]="";
 String dataString= "";
-uint8_t adjust_rtc=HOUR_ADJUST;
+uint8_t adjust_rtc;
 //char nb=0;
 char current_day,current_hour;
 unsigned long previousMillis ;        // will store last time 
@@ -94,6 +93,7 @@ void loop()
       #endif
       mySerial.flush();
      
+     
       if(dataString.startsWith(F("DOOR")))
       {
         Event.StoreEventDoorToFile = 1;
@@ -105,7 +105,6 @@ void loop()
       
       
   }
-  //delay(2000);
 
   Srv_Out_Event();
 
@@ -135,13 +134,13 @@ void GeneralInit() {
   Bridge.begin();                      // init Bridge
   FileSystem.begin();                  // init file system 
   mySerial.begin(19200);               // réception de la téléinfo à 19200 bauds
-  
   RequestToSend();
   RTC.writeSqwPinMode(OFF);           // led off de la RTC au demarrage
   delay(20); 
-  ClearToSend();
+  ClearToSend();  
   Event.Ntp_To_RTC_OK =0;             // on n'a pas encore mis à jour l'heure par internet
   WaitForLinino();                    // on attend que Linino soit demarré (~ 50 secondes)
+ 
     
 }
 /********************************************************************************
@@ -363,6 +362,7 @@ attente de demarrage de Linino ~50s
 ************************************************************/
 void WaitForLinino()
 {
+  
   uint8_t jsonvalue;
 
     
@@ -385,20 +385,27 @@ void WaitForLinino()
     #endif
     
     RequestToSend();
-    RTC.writeSqwPinMode(SquareWave1HZ);	                      // clignotement de la led toutes les secondes
-    jsonvalue = run_python_script_config("sampling_interval");          // lecture du fichier config.json
-    RTC.writenvram(NVRAM_SAMPLING_ADDR,jsonvalue);            // periode d'échantillonnage de la teleinfo (en minutes)  
-    adjust_rtc =run_python_script_config("adjust_rtc");       // recupère l'heure à laquelle on ajuste la RTC avec internet
+    
+    jsonvalue = run_python_script_config("sampling_interval"); // lecture du fichier config.json 
+    RTC.writenvram(NVRAM_SAMPLING_ADDR,jsonvalue);             // periode d'échantillonnage de la teleinfo pour le shield (en minutes) 
+    jsonvalue =  RTC.readnvram(NVRAM_SAMPLING_ADDR);           // affiche le contenu de la nvram à l'adresse 0    
     #ifdef DEBUG 
-    jsonvalue =  RTC.readnvram(NVRAM_SAMPLING_ADDR);          // affiche le contenu de la nvram à l'adresse 0
-    Serial.print("Nvram Sampling Teleinfo every ");  
+    Serial.print(F("Nvram Sampling Teleinfo every "));  
     Serial.print(jsonvalue);
-    Serial.println(" minutes");
-    Serial.print("Adjust RTC every day at ");
-    Serial.print(adjust_rtc);
-    Serial.println(" hour");    
+    Serial.println(F(" minutes"));    
     #endif
     
+    adjust_rtc =run_python_script_config("adjust_rtc");        // recupère l'heure à laquelle on ajuste la RTC avec internet
+    #ifdef DEBUG 
+    Serial.print(F("Adjust RTC every day at "));
+    Serial.print(adjust_rtc);
+    Serial.println(F(" hour"));    
+    #endif
+    
+    #ifdef DEBUG 
+    Serial.println(F("Liberation pin BUSY"));  
+    #endif
+    RTC.writeSqwPinMode(SquareWave1HZ);	                       // clignotement de la led toutes les secondes
     digitalWrite(BUSYPIN, LOW);        // BUSY = 0 la carte Shield peut demarrer.
     ClearToSend();  
 

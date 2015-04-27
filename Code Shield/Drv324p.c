@@ -38,8 +38,8 @@ RTS_PORT            = 0U;                           //
 
 //  ------------- PORT B -------------------------
 
-TIC_AVR_DIR         = INPUT_IO;                 // Detection I2C Busy
-TIC_AVR_PORT        = 0U;                      // 
+BUSY_AVR_DIR         = INPUT_IO;                 // Detection I2C Busy
+BUSY_AVR_PORT        = 0U;                      // 
 
 LED_ROUGE_DIR          = OUTPUT_IO;              
 LED_ROUGE_PORT         = 0U;                     // LED HDMI OFF

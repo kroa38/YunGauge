@@ -44,6 +44,7 @@ void Srv_Out_Event(void)
   Srv_Out_Event_Restart_Teleinfo_Capture();  // relance la capture teleinfo si il y a eu des erreurs dans la précédente capture
   Srv_Out_Event_Send_Teleinfo_to_Arduino();  // Envoie le code Teleinfo à l'Arduino  
   Srv_Out_Event_Send_Door_to_Arduino();      // Envoie le sensor 2 (sensor d'évenement)   
+  
 
 }
 
@@ -327,6 +328,9 @@ void Srv_Out_Event_Send_Teleinfo_to_Arduino(void)
           Drv_Uart0_Init_Uart_Tx();                      // active le transmetteur RS-232            
           
           Drv_Uart0_Send_String(OutputBuffer);
+          DrvLed_Led_On(LED_VERTE);
+          DrvTime_Wait_Millisecondes(200UL);
+          DrvLed_Led_Off(LED_VERTE);
           
             UCSR0B_TXEN0 = 0U;                           // désactive le transmetteur RS-232 
             __no_operation();

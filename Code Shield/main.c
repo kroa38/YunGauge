@@ -15,6 +15,7 @@
 *******************************************************************************/
 void General_Init(void);
 void Wait_For_Yun(void);
+void Need_Reset(void);
 /*******************************************************************************
 *	Variables globales
 *******************************************************************************/
@@ -38,8 +39,8 @@ General_Init();                                   // init globale
 
           while( !S_Twi_Error_Flag.bi2c)
           {        
-            Srv_Out_Event();
-            
+            Need_Reset();
+            Srv_Out_Event();    
                __watchdog_reset();
           }
 
@@ -68,7 +69,7 @@ void General_Init(void){
           __disable_interrupt();
           Drv324p_Disable_Watchdog();               // désactive le watchdog au depart
           Drv324P_Set_IO();                         //Initilise les IO
-          //Wait_For_Yun();                           //attente demarrage carte yun 
+          Wait_For_Yun();                           //attente demarrage carte yun 
           DrvLed_Led_On(LED_ROUGE);
           DrvLed_Led_On(LED_VERTE);
           DrvLed_Led_On(LED_ORANGE);   
@@ -88,7 +89,7 @@ void General_Init(void){
           Drv324p_Interrupt(SET,INT_SENSOR_DOOR);   // autorise pas la touche select
           Drv324p_Interrupt(SET,INT_RTC_TIC);       // set interrupt from external RTC            
           DrvSensor_Init();
-          Drv_DS1338_Init();
+          //Drv_DS1338_Init();
           S_Interrupt_Atmega.bRTC_Tic_Int_Flag=0;
           asm("nop");
 
@@ -104,13 +105,31 @@ void Wait_For_Yun(void)
   Int8U i=0;
   
   __watchdog_reset();
-  while(i++<2)
+  while(i++<5)
   {
     __delay_cycles(_1000_MILLISECONDE);                 // attente demarrage carte Yun
     __watchdog_reset();
   }
   
-  //while(TIC_AVR_PIN);           // attend que le yun abaisse la ligne TIC_AVR
+  i=1;
+  
+  while(i)           // attend que le yun abaisse la ligne BUSY_AVR
+  {
+    i = BUSY_AVR_PIN;
+  }
+}
+/***********************************************************************************************************************
+*	void Need_Reset(void)   
+*
+Utilisé dans la boucle principale.
+SI l'AVR du  Yun met à 1 la pin BUSY alors çela fera entrer en reset l'AVR
+
+***********************************************************************************************************************/
+void Need_Reset(void)
+{
+   Int8U i=0;
+   i = BUSY_AVR_PIN;
+   
+   if (i==1) Drv324p_Reset_By_Watchdog();
   
 }
-
