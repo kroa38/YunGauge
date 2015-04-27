@@ -32,7 +32,7 @@ def main(str_arg):
         print str(data)
         exit()
     if str_arg == "check_internet":
-        if check_internet():
+        if check_internet()=="1":
             email_ip_addr()
         exit()
     else:
