@@ -126,7 +126,8 @@ void GeneralInit() {
  
   #ifdef DEBUG
   Serial.begin(115200);                // init UART pour debug via USB.
-  while (!Serial);                     // wait for serial port to connect. 
+  //while (!Serial);                     // wait for serial port to connect. 
+  delay(5000);
   Serial.println(F("START DEBUG ...... "));
   #endif
   

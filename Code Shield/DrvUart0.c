@@ -287,7 +287,7 @@ Int32U Drv_Uart0_Acsii_to_Int32(char *ptrstr)
 char *  Drv_Uart0_Int32_To_Ascii(Int32U data)
 Convertit un entier de 32bits en chaine ascii
 entrée : int32 non signé.
-entrée : pointeur sur chaine de caractère.
+entrée : pointeur sur tableau de characteres
 sortie : retourne dans Uart0_Buffer_Diff le chiffre sur 9 caracteres
 *******************************************************************************/
 void Drv_Uart0_Int32_To_Ascii(Int32U TabResult, char *tmpbuff)

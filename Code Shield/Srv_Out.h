@@ -6,7 +6,7 @@
 #define LENGHT_HCHP 14
 #define LENGHT_PTEC 9
 
-#define COUNTER_TIC_SECONDE   45    // 45 initialement
+#define COUNTER_TIC_SECONDE   55    // 55 initialement
 #define TRAMEFILTERCOUNT  15
 typedef volatile struct Struct_Srv_Event{
 
@@ -25,6 +25,7 @@ void Srv_Out_Event_Filter_Teleinfo(void);
 void Srv_Out_Event_Send_Teleinfo_to_Arduino(void);
 void Srv_Out_Event_Send_Door_to_Arduino(void);
 void Srv_Out_Event_Restart_Teleinfo_Capture(void);
+void teststring(void);
 
 void Calc_Diff(Int32U *previous_index, char *ptr_index, char *string_out);
 void testcalc(void);

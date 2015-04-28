@@ -196,7 +196,7 @@ void Srv_StoreEventTeleinfoToFile()
       //construct stringll
       dataString += ',';
       dataString += getdate(DATE_ISO8601);
-      dataFile.print(dataString);
+      dataFile.println(dataString);
       // store event to file
       dataFile.close();
       
@@ -248,7 +248,7 @@ void Srv_StoreEventDoorToFile()
       //construct string
       dataString += ',';
       dataString += getdate(DATE_ISO8601);
-      dataFile.print(dataString);
+      dataFile.println(dataString);
       // store event to file
       dataFile.close();
       

@@ -27,7 +27,8 @@ static char tab_diff_hp[DIFF_COUNTER_LENGTH+1];             // le +1 permet de r
 static char tab_diff_hc[DIFF_COUNTER_LENGTH+1];             // le +1 permet de rajouter le caractère 0 de fin de string
 static Int8U tramefiltercount=TRAMEFILTERCOUNT;             // nb de fois que l'on recapture la trame suite à erreurs dans celle-ci
 static Int32U previous_hc=0,previous_hp=0;
-
+extern Int32U Index_HP_Test;
+extern Int32U Index_HC_Test;
 Int8U WaterCounter=0;
 
 /*******************************************************************************************************
@@ -56,6 +57,8 @@ toutes les 45 secondes.
 
 rtc_nvram contient la valeur d'échantillonage de teleinfo qui peut être
 toutes les 1min, 5min, 10min, 15min, 20min, 30min, 60min, ou tous les jours à heure fixe.
+SI la Nvram contient 0 alors c'est une trame test qui est envoyée toutes les minutes.
+
 
 ********************************************************************************************************/
 void Srv_Out_Event_RTC_TIC(void)
@@ -72,21 +75,21 @@ void Srv_Out_Event_RTC_TIC(void)
                 Counter_RTC_TIC = 0U;
                 rtc_nvram_sampling = DrvTwi_Read_Byte(I2C_DEVICE_ADDR_DS1338,DS1338_NVRAM_REG);  
                
-                 if(Drv_DS1338_Synchro_With_RTC(rtc_nvram_sampling)) 
+                if (rtc_nvram_sampling ==0)                         // 0 = presence du mode test
+                {
+                  if(Drv_DS1338_Synchro_With_RTC(SAMPLING_EVERY_MIN)) 
+                  {
+                        teststring();                               // teststring
+                  }
+                }
+                else if(Drv_DS1338_Synchro_With_RTC(rtc_nvram_sampling)) 
                  {
                      
-                     Drv_Uart0_Init_Uart_Rx();                      // autorise la réception TELEINFO
+                     Drv_Uart0_Init_Uart_Rx();                      // autorise la réception TELEINFO 
                      DrvLed_Led_On(LED_ORANGE);         
                      DrvTime_Wait_Millisecondes(100UL); 
                      DrvLed_Led_Off(LED_ORANGE);
-                     /*
-                     Drv_Uart0_Init_Uart_Tx();                      // active le transmetteur RS-232    
-                     Drv_Uart0_Send_String("Teleinfo test");             
-                     UCSR0B_TXEN0 = 0U;                             // désactive le transmetteur RS-232  
-                     DrvLed_Led_On(LED_ORANGE);         
-                     DrvTime_Wait_Millisecondes(200UL); 
-                     DrvLed_Led_Off(LED_ORANGE);
-                     */
+  
                  }
                
            }          
@@ -328,11 +331,12 @@ void Srv_Out_Event_Send_Teleinfo_to_Arduino(void)
           Drv_Uart0_Init_Uart_Tx();                      // active le transmetteur RS-232            
           
           Drv_Uart0_Send_String(OutputBuffer);
+          UCSR0B_TXEN0 = 0U;                           // désactive le transmetteur RS-232 
+          
           DrvLed_Led_On(LED_VERTE);
           DrvTime_Wait_Millisecondes(200UL);
-          DrvLed_Led_Off(LED_VERTE);
+          DrvLed_Led_Off(LED_VERTE);   
           
-            UCSR0B_TXEN0 = 0U;                           // désactive le transmetteur RS-232 
             __no_operation();
             WaterCounter=0U;                             // reinitialise le compteur d'eau
         }
@@ -453,6 +457,52 @@ void testcat(void)
   strcat(OutputBuffer,(hc+5));            // ajout de la valeur HP ex 001524512 (9 caractères)
   strcat(OutputBuffer,",");                     // ajout virgule de séparation des champs CSV.
   
+  asm("nop");
+  
+}
+/*******************************************************************************************
+void teststring(void)
+Renvoie sur l'UART une chaine de charactères du type : 001526156,001287356,HP
+le premier index est incrémenté à chaque passage dans la fct.
+le second index ne bouge pas.
+le mode est figé sur HP.
+In : void
+Out : void
+********************************************************************************************/
+void teststring(void)
+{
+  
+  #define OUTPUT_BUFFER_SIZE 100 
+  
+  char OutputBuffer[OUTPUT_BUFFER_SIZE];
+  
+  for ( Int8U i=0; i<OUTPUT_BUFFER_SIZE; i++ )
+      {
+        OutputBuffer[i]=0;
+      }
+  
+  char tabhp[14];
+  char tabhc[14];
+  
+  Index_HP_Test += 4UL;     
+  
+  Drv_Uart0_Int32_To_Ascii(Index_HP_Test,tabhp);
+  Drv_Uart0_Int32_To_Ascii(Index_HC_Test,tabhc);
+  
+  strcpy(OutputBuffer,tabhp);            // ajout de la valeur HP ex 001524512 (9 caractères)
+  strcat(OutputBuffer,",");                     // ajout virgule de séparation des champs CSV.
+  strcat(OutputBuffer,tabhc);            // ajout de la valeur HP ex 001524512 (9 caractères)
+  strcat(OutputBuffer,",HP");                     // ajout virgule de séparation des champs CSV. 
+  
+  asm("nop");
+  
+  Drv_Uart0_Init_Uart_Tx();                      // active le transmetteur RS-232    
+  Drv_Uart0_Send_String(OutputBuffer);             
+  UCSR0B_TXEN0 = 0U;                             // désactive le transmetteur RS-232  
+  DrvLed_Led_On(LED_ORANGE);         
+  DrvTime_Wait_Millisecondes(200UL); 
+  DrvLed_Led_Off(LED_ORANGE);
+ 
   asm("nop");
   
 }
