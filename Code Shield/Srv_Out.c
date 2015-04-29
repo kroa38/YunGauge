@@ -73,7 +73,7 @@ void Srv_Out_Event_RTC_TIC(void)
            if(Counter_RTC_TIC++ >= COUNTER_TIC_SECONDE)
            {
                 Counter_RTC_TIC = 0U;
-                rtc_nvram_sampling = DrvTwi_Read_Byte(I2C_DEVICE_ADDR_DS1338,DS1338_NVRAM_REG);  
+                rtc_nvram_sampling = DrvTwi_Read_Byte(I2C_DEVICE_ADDR_DS1338,DS1338_NVRAM_REG_SAMPLING);  
                
                 if (rtc_nvram_sampling ==0)                         // 0 = presence du mode test
                 {
@@ -293,7 +293,7 @@ HP + HC + PTEC + WaterCounteur
 ***********************************************************************/
 void Srv_Out_Event_Send_Teleinfo_to_Arduino(void)
 {
-#define OUTPUT_BUFFER_SIZE 100  
+#define OUTPUT_BUFFER_SIZE 25  
   
 
   
@@ -315,23 +315,23 @@ void Srv_Out_Event_Send_Teleinfo_to_Arduino(void)
           
           strcpy(OutputBuffer,(ptr_hchp+5));            // ajout de la valeur HP ex 001524512 (9 caractères)
           strcat(OutputBuffer,",");                     // ajout virgule de séparation des champs CSV.
-          //strcat(OutputBuffer,tab_diff_hp);             // ajout envoie la difference hp 
-          //strcat(OutputBuffer,",");                     // ajout virgule de séparation des champs CSV.  
+          //strcat(OutputBuffer,tab_diff_hp);           // ajout envoie la difference hp 
+          //strcat(OutputBuffer,",");                   // ajout virgule de séparation des champs CSV.  
           strcat(OutputBuffer,(ptr_hchc+5));            // ajout on renvoi uniquement la valeur HC ex 007524415 (9 caractères)
           strcat(OutputBuffer,",");                     // ajout virgule de séparation des champs CSV. 
-          //strcat(OutputBuffer,tab_diff_hc);             // ajout envoie la difference hc           
-          //strcat(OutputBuffer,",");                     // ajout virgule de séparation des champs CSV. 
+          //strcat(OutputBuffer,tab_diff_hc);           // ajout envoie la difference hc           
+          //strcat(OutputBuffer,",");                   // ajout virgule de séparation des champs CSV. 
           strcat(OutputBuffer,(ptr_ptec+5));            // ajout on renvoi uniquement HP ou HC (2 caractères)
-          //strcat(OutputBuffer,",");                     // ajout virgule de séparation des champs CSV.
+          //strcat(OutputBuffer,",");                   // ajout virgule de séparation des champs CSV.
           
           //Drv_Uart0_Int32_To_Ascii((Int32U)(WaterCounter),Tmp_Buffer_Water);
           //Drv_Uart0_Shift_Tab(Tmp_Buffer_Water);       // elimine les zero de l'entête de la chaine
-          //strcat(OutputBuffer,Tmp_Buffer_Water);         // ajout du comptage en eau écoulé depuis la dernière mesure ( 2 carcatères)
+          //strcat(OutputBuffer,Tmp_Buffer_Water);       // ajout du comptage en eau écoulé depuis la dernière mesure ( 2 carcatères)
+          
           
           Drv_Uart0_Init_Uart_Tx();                      // active le transmetteur RS-232            
-          
           Drv_Uart0_Send_String(OutputBuffer);
-          UCSR0B_TXEN0 = 0U;                           // désactive le transmetteur RS-232 
+          Drv_Uart0_Disable_Uart_Tx();                  // désactive le transmetteur RS-232 
           
           DrvLed_Led_On(LED_VERTE);
           DrvTime_Wait_Millisecondes(200UL);
@@ -372,7 +372,7 @@ void Srv_Out_Event_Send_Door_to_Arduino(void)
                 DrvLed_Led_Off(LED_VERTE);         
             }
             
-            UCSR0B_TXEN0 = 0U;                             // désactive le transmetteur RS-232 
+            Drv_Uart0_Disable_Uart_Tx();                             // désactive le transmetteur RS-232 
 
              Drv324p_Interrupt(SET,INT_SENSOR_DOOR);    // autorise IT Door
         }
@@ -445,9 +445,9 @@ void testcalc_shift(void)
 ********************************************************************************************/
 void testcat(void)
 {
-  #define OUTPUT_BUFFER_SIZE 100 
+  #define TEST_CAT_BUFFER 35 
   
-  char OutputBuffer[OUTPUT_BUFFER_SIZE];
+  char OutputBuffer[TEST_CAT_BUFFER];
   
   static char hp[] = "HCHP 004148963" ;
   static char hc[] = "HCHC 000524114" ;
@@ -471,12 +471,12 @@ Out : void
 ********************************************************************************************/
 void teststring(void)
 {
+#define TEST_STRING_BUFFER 25
   
-  #define OUTPUT_BUFFER_SIZE 100 
+  char OutputBuffer[TEST_STRING_BUFFER];
+  char sum[2]={0,0};
   
-  char OutputBuffer[OUTPUT_BUFFER_SIZE];
-  
-  for ( Int8U i=0; i<OUTPUT_BUFFER_SIZE; i++ )
+  for ( Int8U i=0; i<TEST_STRING_BUFFER; i++ )
       {
         OutputBuffer[i]=0;
       }
@@ -490,15 +490,29 @@ void teststring(void)
   Drv_Uart0_Int32_To_Ascii(Index_HC_Test,tabhc);
   
   strcpy(OutputBuffer,tabhp);            // ajout de la valeur HP ex 001524512 (9 caractères)
-  strcat(OutputBuffer,",");                     // ajout virgule de séparation des champs CSV.
+  strcat(OutputBuffer,",");              // ajout virgule de séparation des champs CSV.
   strcat(OutputBuffer,tabhc);            // ajout de la valeur HP ex 001524512 (9 caractères)
-  strcat(OutputBuffer,",HP");                     // ajout virgule de séparation des champs CSV. 
+  strcat(OutputBuffer,",HP,");           // ajout virgule de séparation des champs CSV. 
+  
+  for ( Int8U i=0; i<TEST_STRING_BUFFER; i++ )           // calcul CRC
+      {
+        sum[0] = (sum[0] + OutputBuffer[i]) & 0x3F ;
+      }
+  sum[0] = sum[0] + SP_CHAR;
+  
+  strcat(OutputBuffer,sum);             // ajout du CRC en fin de chaine.
+  
   
   asm("nop");
   
-  Drv_Uart0_Init_Uart_Tx();                      // active le transmetteur RS-232    
-  Drv_Uart0_Send_String(OutputBuffer);             
-  UCSR0B_TXEN0 = 0U;                             // désactive le transmetteur RS-232  
+  
+  if(Uart_Request_To_Send())
+    { 
+      Drv_Uart0_Init_Uart_Tx();             // active le transmetteur RS-232    
+      Drv_Uart0_Send_String(OutputBuffer);             
+      Drv_Uart0_Disable_Uart_Tx();          // désactive le transmetteur RS-232
+    }  
+  
   DrvLed_Led_On(LED_ORANGE);         
   DrvTime_Wait_Millisecondes(200UL); 
   DrvLed_Led_Off(LED_ORANGE);
@@ -506,3 +520,4 @@ void teststring(void)
   asm("nop");
   
 }
+

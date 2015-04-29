@@ -45,7 +45,9 @@
   #define   DS1338_BIT_RS1_CONTROL_REG        1U
   #define   DS1338_BIT_RS0_CONTROL_REG        0U
 
-#define   DS1338_NVRAM_REG     0x08
+#define   DS1338_NVRAM_REG_SAMPLING     0x08                // contient la période d'échantillonnage
+#define   DS1338_NVRAM_REG_UART_RTS_TELEINFO     0x09       // RTS qui dit qu'un message teleinfo est reçu
+#define   DS1338_NVRAM_REG_UART_REPEAT           0x0A       // demande de renvoie du message
 
 void Drv_DS1338_Init(void);
 Int8U Drv_DS1338_read_minute(void);

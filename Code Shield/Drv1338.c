@@ -15,9 +15,9 @@ Cette fonction initialise le switch HDMI AD1338
 *******************************************************************************/
 void Drv_DS1338_Init(void)
 {
-     
+  Drv324p_I2C_RequestToSend();   
   Script_3D(SCRIPT_INIT_DS1338,SIZEOF_SCRIPT_INIT_DS1338);
-  
+  Drv324p_I2C_ClearToSend();
 }
 /*******************************************************************************
 *	Int8U Drv_DS1338_read_minute(void)
@@ -97,7 +97,7 @@ Int8U Drv_DS1338_Synchro_With_RTC(Int8U sampling_rate)
   Int8U tmp=0U;
   Int8U retval=0U;
   
-  //Drv324p_RequestToSend();              // attente que la ligne CTS soit libre
+  //Drv324p_I2C_RequestToSend();              // attente que la ligne CTS soit libre
   if(sampling_rate == SAMPLING_EVERY_MIN)
   {  
       tmp=Drv_DS1338_read_minute();
@@ -218,7 +218,7 @@ Int8U Drv_DS1338_Synchro_With_RTC(Int8U sampling_rate)
       }
   }  
   
-  //Drv324p_ClearToSend();
+  //Drv324p_I2C_ClearToSend();
   
   return(retval);
   

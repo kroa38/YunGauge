@@ -13,16 +13,17 @@
 /********************************************************************************
 DEFINITIONS
 ********************************************************************************/
-#define BUSYPIN 4                           // n° de la pin Busy
-#define RTSPIN 6                            // n° de la pin RTS (output)
-#define CTSPIN 5                            // n° de la pin CTS (INPUT)
-#define LEDVERTE 13                         // LED verte pour test
-#define DEBUG                               // sortie console pour debug
-#define HOUR_ADJUST_CHECK 50UL*60UL*1000UL  // interval check pour la maj de l'heure de internet (50 minutes)
-#define HOUR_ADJUST_CHECK_THIN 5UL*60UL*1000UL  // interval check pour la maj de l'heure de internet (1 minutes)
-#define WAITFORLININO  6                    // temps d'attente de démarrage de linino (mini 50s)
-#define SAMPLING_TELEINFO 106               // periode d'échantillonnage de teleinfo 1min,5min, 10min, 15min, 20min, 30min, 60min,106=every day at 6 oclock
-#define NVRAM_SAMPLING_ADDR 0               // Adresse offset Nvram du DS1338 pour la periode d'échantillonage
+#define BUSYPIN 4                                 // n° de la pin Busy
+#define RTSPIN 6                                  // n° de la pin RTS (output)
+#define CTSPIN 5                                  // n° de la pin CTS (INPUT)
+#define LEDVERTE 13                               // LED verte pour test
+#define DEBUG                                     // sortie console pour debug
+#define HOUR_ADJUST_CHECK 50UL*60UL*1000UL        // interval check pour la maj de l'heure de internet (50 minutes)
+#define HOUR_ADJUST_CHECK_THIN 5UL*60UL*1000UL    // interval check pour la maj de l'heure de internet (1 minutes)
+#define WAITFORLININO  6                          // temps d'attente de démarrage de linino (mini 50s)
+#define DS1338_NVRAM_REG_SAMPLING              0  // Adresse offset Nvram du DS1338 pour la periode d'échantillonage
+#define DS1338_NVRAM_REG_UART_RTS_TELEINFO     1  // RTS qui dit qu'un message teleinfo est reçu
+#define DS1338_NVRAM_REG_UART_REPEAT           2  // demande de renvoie du message
 #define DATE_STRING_SIZE 25
 #define RX_BUFFER_SIZE 70
 #define DATE_ISO8601 1
@@ -43,7 +44,7 @@ struct Evenements
      unsigned char StoreEventTeleinfoToFile     : 1;
      unsigned char StoreEventDoorToFile         : 1;  
      unsigned char Ntp_To_RTC_OK        	: 1; 
-     unsigned char dummy_one	                : 1;
+     unsigned char Uart_data_ready              : 1;
      unsigned char dummy_two	                : 1;  
      unsigned char dummy_tree	                : 1;     
 };
@@ -56,56 +57,19 @@ SoftwareSerial mySerial(10, 11); // RX, TX
 FONCTION SETUP
 ********************************************************************************/
 
-void setup() {
-
+void setup() 
+{
   GeneralInit();
-  
 }
 /********************************************************************************
 FONCTION LOOP
 ********************************************************************************/
 void loop() 
 {
-
-  char nb=0;
-  dataString = "";
-  char MsgChar;
-  
-  while (mySerial.available())            // boucle si reception de caractères
-  { 
-   MsgChar=char(mySerial.read());
-   
-   if( (MsgChar>31) && (MsgChar<127))    // on ne prend pas en compte tous les caractères
-   {
-   dataString += MsgChar;
-   nb+=1;
-   }
-  }
-  if(nb)
-  {
-      //mySerial.end();
-      #ifdef DEBUG
-      Serial.print(F("Event Received..!  "));
-      //Serial.print(nb,DEC);
-      Serial.print(' ');
-      Serial.println(dataString);
-      #endif
-      mySerial.flush();
-     
-     
-      if(dataString.startsWith(F("DOOR")))
-      {
-        Event.StoreEventDoorToFile = 1;
-      }
-      else
-      {
-        Event.StoreEventTeleinfoToFile = 1;
-      }
-  }
-
-  Srv_Out_Event();
-
-    
+  /* gestionnaire d'évenements */
+    Is_Uart_Data();
+    delay(500);
+    Srv_Out_Event();   
 }
 /********************************************************************************
 FONCTION GeneralInit()
@@ -119,7 +83,7 @@ void GeneralInit() {
   pinMode(RTSPIN, OUTPUT);  
   digitalWrite(BUSYPIN, HIGH);          // BUSY = 1 la carte Shield est en pause.
   digitalWrite(LEDVERTE, LOW);          // led status event
-  ClearToSend();                        // libère la ligne I2C
+  I2C_ClearToSend();                        // libère la ligne I2C
  
   #ifdef DEBUG
   Serial.begin(115200);                // init UART pour debug via USB.
@@ -131,11 +95,10 @@ void GeneralInit() {
   Wire.begin();                        // init I2C
   Bridge.begin();                      // init Bridge
   FileSystem.begin();                  // init file system 
-  mySerial.begin(19200);               // réception de la téléinfo à 19200 bauds
-  RequestToSend();
+
+  I2C_RequestToSend();
   RTC.writeSqwPinMode(OFF);           // led off de la RTC au demarrage
-  delay(20); 
-  ClearToSend();  
+  I2C_ClearToSend();  
   Event.Ntp_To_RTC_OK =0;             // on n'a pas encore mis à jour l'heure par internet
   WaitForLinino();                    // on attend que Linino soit demarré (~ 50 secondes)
  
@@ -189,13 +152,13 @@ String LininoGetTimeStamp() {
 *	void Drv324p_ClearToSend(void)
 Libère la ligne RTS
 *******************************************************************************/
-void RequestToSend(void)
+void I2C_RequestToSend(void)
 {
         
     if(digitalRead(CTSPIN))
     {
       while(digitalRead(CTSPIN));
-      delay(300);      
+      delay(100);      
     }
     
     digitalWrite(RTSPIN, HIGH);
@@ -205,7 +168,7 @@ void RequestToSend(void)
 *	void Drv324p_ClearToSend(void)
 Libère la ligne RTS
 *******************************************************************************/
-void ClearToSend(void)
+void I2C_ClearToSend(void)
 {
     digitalWrite(RTSPIN, LOW); 
 }
@@ -260,9 +223,9 @@ Print sur la console uart la date. (debug uniquement)
 void PrintRtcDate()
 {
     #ifdef DEBUG
-    RequestToSend();    
+    I2C_RequestToSend();    
     DateTime now = RTC.now(); 
-    ClearToSend();    
+    I2C_ClearToSend();    
     
     Serial.print(F("RTC Date: "));
     Serial.print(now.day(), DEC);
@@ -295,9 +258,9 @@ char *getdate(char format)
     date_array[i] = 0;
   }
     
-  RequestToSend();
+  I2C_RequestToSend();
   DateTime now = RTC.now();
-  ClearToSend();
+  I2C_ClearToSend();
   
   if(format==DATE_ISO8601)
   {
@@ -382,11 +345,11 @@ void WaitForLinino()
     Serial.println(F("Linux is ready "));
     #endif
     
-    RequestToSend();
+    I2C_RequestToSend();
     
     jsonvalue = run_python_script_config("sampling_interval"); // lecture du fichier config.json 
-    RTC.writenvram(NVRAM_SAMPLING_ADDR,jsonvalue);             // periode d'échantillonnage de la teleinfo pour le shield (en minutes) 
-    jsonvalue =  RTC.readnvram(NVRAM_SAMPLING_ADDR);           // affiche le contenu de la nvram à l'adresse 0    
+    RTC.writenvram(DS1338_NVRAM_REG_SAMPLING,jsonvalue);             // periode d'échantillonnage de la teleinfo pour le shield (en minutes) 
+    jsonvalue =  RTC.readnvram(DS1338_NVRAM_REG_SAMPLING);           // affiche le contenu de la nvram à l'adresse 0    
     #ifdef DEBUG 
     Serial.print(F("Nvram Sampling Teleinfo every "));  
     Serial.print(jsonvalue);
@@ -405,6 +368,26 @@ void WaitForLinino()
     #endif
     RTC.writeSqwPinMode(SquareWave1HZ);	                       // clignotement de la led toutes les secondes
     digitalWrite(BUSYPIN, LOW);        // BUSY = 0 la carte Shield peut demarrer.
-    ClearToSend();  
+    I2C_ClearToSend();  
 
 }
+/***********************************************************
+uint8_t Is_Uart_Data(void)
+attente de demarrage de Linino ~50s
+************************************************************/
+uint8_t Is_Uart_Data(void)
+{
+  uint8_t tmp_nvram=0;
+  
+
+    I2C_RequestToSend();
+    tmp_nvram = RTC.readnvram(DS1338_NVRAM_REG_UART_RTS_TELEINFO);
+    I2C_ClearToSend();
+    
+    if(tmp_nvram)
+     {
+      Event.Uart_data_ready=1;
+      Serial.println(F("Data UART available..."));  
+     }
+}
+

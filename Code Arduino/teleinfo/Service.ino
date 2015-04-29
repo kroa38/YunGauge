@@ -4,14 +4,100 @@ Fonction de gestion des evenements
 ************************************************************/
 void Srv_Out_Event(void)
 {
-   Srv_AdjustDateEveryDay();   
-   Srv_PingGoogle();
-   Srv_Ntp_To_Rtc_Update();
-   Srv_StoreEventTeleinfoToFile();
-   Srv_StoreEventDoorToFile();
+   Srv_read_uart_data();
+   //Srv_AdjustDateEveryDay();   
+   //Srv_PingGoogle();
+   //Srv_Ntp_To_Rtc_Update();
+   //Srv_StoreEventTeleinfoToFile();
+   //Srv_StoreEventDoorToFile();
    
 }
+/***********************************************************
+void read_uart_data(void)
+ledcture du buffer de l'uart
+************************************************************/
+void Srv_read_uart_data(void)
+{
+  if(Event.Uart_data_ready)
+  {
+      Event.Uart_data_ready=0;
+      char nb=0U;
+      dataString = "";
+      char MsgChar;
+      char lastchar;
+      mySerial.begin(19200);               // réception de la téléinfo à 19200 bauds
+      
+      #ifdef DEBUG
+      Serial.println(F("Autorise UART Receipt"));
+      #endif
+      
+      I2C_RequestToSend();
+      RTC.writenvram(DS1338_NVRAM_REG_UART_RTS_TELEINFO,0U);
+      I2C_ClearToSend();
+      delay(100);
+      
+      while (mySerial.available())            // boucle si reception de caractères
+      { 
+       MsgChar=char(mySerial.read());
+       if (MsgChar != 0U) lastchar=MsgChar;
+        
+       if( (MsgChar>31) && (MsgChar<127))    // on ne prend pas en compte tous les caractères
+       {
+         dataString += MsgChar;
+         nb+=1;
+       }
+      }
+      
+      mySerial.end();
+      
+      if(nb)
+      {
 
+          /* calcul du CRC de la trame reçue */
+          char strln,crc;
+          strln = dataString.length();
+           for ( char i=0; i<strln-1; i++ )
+          {
+            crc = (crc + dataString.charAt(i)) & 0x3F;
+          }
+          crc = crc + 0x20;
+          
+          #ifdef DEBUG
+          Serial.print(F("Event Received..!  "));
+          //Serial.print(nb,DEC);
+          Serial.print(' ');
+          Serial.println(dataString);
+          if(crc == lastchar)
+            Serial.println("CRC OK.....");
+          else
+            Serial.println("CRC not OK !!!!");
+          #endif
+          
+          /* vide buffer reception */
+          mySerial.flush();
+         
+         // Si CRC ok on autorise l'écriture sur fichier
+         if(crc == lastchar)
+         {
+            if(dataString.startsWith(F("DOOR")))
+            {
+              Event.StoreEventDoorToFile = 1;
+            }
+            else
+            {
+              Event.StoreEventTeleinfoToFile = 1;
+            }
+         }
+      }
+      else
+      {
+          #ifdef DEBUG
+          Serial.println(F("No data received from UART"));
+          #endif
+      }
+      
+   }
+}
 /***********************************************************
 void Srv_AdjustDateEveryDay()
 
@@ -33,9 +119,9 @@ void Srv_AdjustDateEveryDay()
   {        
       if(Event.Ntp_To_RTC_OK) 
        { 
-          RequestToSend();
+          I2C_RequestToSend();
           DateTime now = RTC.now();
-          ClearToSend();      
+          I2C_ClearToSend();      
           
           // save the last time you update
           previousMillis = currentMillis; 
@@ -148,9 +234,9 @@ void Srv_Ntp_To_Rtc_Update()
     dt[5]=TimeL.substring(6).toInt();    // sec
     
     //met la rtc a jour avec la date et l'heure internet.
-    RequestToSend();    
+    I2C_RequestToSend();    
     RTC.adjust(DateTime(dt[0],dt[1],dt[2],dt[3],dt[4],dt[5]));
-    ClearToSend();
+    I2C_ClearToSend();
 
     Blink_Led(10); 
     Event.Ntp_To_RTC_OK = 1;
@@ -179,11 +265,7 @@ void Srv_StoreEventTeleinfoToFile()
   if(Event.StoreEventTeleinfoToFile)
    {
     Event.StoreEventTeleinfoToFile = 0;
-    
-    #ifdef DEBUG
-    Serial.println(F("Store to file teleinfo.log ..."));
-    #endif
-    
+        
     File dataFile = FileSystem.open("/root/yungauge/scripts/python/teleinfo.log", FILE_APPEND);
 
     // if the file is available, write to it:
@@ -191,7 +273,7 @@ void Srv_StoreEventTeleinfoToFile()
     {
 
       #ifdef DEBUG 
-      Serial.println(F("File ok...!"));
+      Serial.println(F("Store to file teleinfo.log ..."));
       #endif
       //construct stringll
       dataString += ',';
@@ -206,7 +288,7 @@ void Srv_StoreEventTeleinfoToFile()
     else
     {
       #ifdef DEBUG  
-      Serial.print(F("File Error....!"));
+      Serial.print(F("Error File Teleinfo.log ...."));
       #endif
       while(1)
       {
@@ -231,11 +313,7 @@ void Srv_StoreEventDoorToFile()
   if(Event.StoreEventDoorToFile)
    {
     Event.StoreEventDoorToFile = 0;
-    
-    #ifdef DEBUG
-    Serial.println(F("Store to file door.log ..."));
-    #endif
-    
+        
     File dataFile = FileSystem.open("/root/yungauge/scripts/python/door.log", FILE_APPEND);
 
     // if the file is available, write to it:
@@ -243,7 +321,7 @@ void Srv_StoreEventDoorToFile()
     {
 
       #ifdef DEBUG 
-      Serial.println(F("File ok...!"));
+      Serial.println(F("Store to file door.log ..."));
       #endif
       //construct string
       dataString += ',';
@@ -258,7 +336,7 @@ void Srv_StoreEventDoorToFile()
     else
     {
       #ifdef DEBUG  
-      Serial.print(F("File Error....!"));
+      Serial.print(F("Error File door.log ...."));
       #endif
       while(1)
       {
@@ -272,5 +350,5 @@ void Srv_StoreEventDoorToFile()
   
 }
 
-  
+
 

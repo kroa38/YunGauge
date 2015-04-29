@@ -62,6 +62,8 @@ void Drv_Uart0_Send_Char(Int8U uart_data);
 Int32U Drv_Uart0_Acsii_to_Int32(char *ptrstr);
 void Drv_Uart0_Int32_To_Ascii(Int32U TabResult, char *tmpbuff);
 void Drv_Uart0_Shift_Tab(char *tmpbuff);
+void Drv_Uart0_Disable_Uart_Tx(void);
+Int8U Uart_Request_To_Send(void);
 
 #pragma vector=USART0_RX_vect
 __interrupt void Drv_Uart0_Interrupt(void);

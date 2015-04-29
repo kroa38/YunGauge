@@ -25,6 +25,7 @@ void Srv_Out_Event_Filter_Teleinfo(void);
 void Srv_Out_Event_Send_Teleinfo_to_Arduino(void);
 void Srv_Out_Event_Send_Door_to_Arduino(void);
 void Srv_Out_Event_Restart_Teleinfo_Capture(void);
+
 void teststring(void);
 
 void Calc_Diff(Int32U *previous_index, char *ptr_index, char *string_out);

@@ -106,8 +106,8 @@ void Drv324p_Interrupt(Int8U mode,Int8U Interrupt_Name);
 void Drv324p_Disable_Watchdog(void);
 void Drv324p_Enable_Watchdog(void);
 void Drv324p_Reset_By_Watchdog(void);
-void Drv324p_RequestToSend(void);
-void Drv324p_ClearToSend(void);
+void Drv324p_I2C_RequestToSend(void);
+void Drv324p_I2C_ClearToSend(void);
 #pragma vector = PCINT3_vect
 __interrupt void Drv7513_PCINT3_ISR(void);
 

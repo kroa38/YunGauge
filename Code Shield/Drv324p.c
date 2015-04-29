@@ -225,12 +225,12 @@ void Drv324p_Reset_By_Watchdog(void)
 }
 
 /*******************************************************************************
-*	void Drv324p_RequestToSend(void)
+*	void Drv324p_I2C_RequestToSend(void)
 Regarde la ligne CTS est à 1  pour voir si le port I2C est occupé.
-Utilisée poru le demarrage de la carte Shield et l'utilisation I2C.
+Utilisée pour l'utilisation I2C en conjonction avec l'Arduino.
 Met à 1 RTS pour prevenir le YUN que la ligne I2C est occupée
 *******************************************************************************/
-void Drv324p_RequestToSend(void)
+void Drv324p_I2C_RequestToSend(void)
 {
     Int8U tmp;
     
@@ -242,7 +242,6 @@ void Drv324p_RequestToSend(void)
       {
       //__delay_cycles(_300_MILLISECONDE);
       tmp = CTS_PIN;
-      
       }      
     }
     
@@ -250,10 +249,10 @@ void Drv324p_RequestToSend(void)
     
 }
 /*******************************************************************************
-*	void Drv324p_ClearToSend(void)
+*	void Drv324p_I2C_ClearToSend(void)
 Libère la ligne RTS
 *******************************************************************************/
-void Drv324p_ClearToSend(void)
+void Drv324p_I2C_ClearToSend(void)
 {
   
     RTS_PORT = 0;   

@@ -4,6 +4,7 @@
 #include "DrvUart0.h"
 #include "DrvTwi.h"
 #include "Srv_Out.h"
+#include "Drv1338.h"
 
 /*******************************************************************************
 *	Variables globales
@@ -63,7 +64,14 @@ void Drv_Uart0_Init_Uart_Tx(void)
   UCSR0B_RXCIE0 = 0U;                        // RX Complete Interrupt disable
 
  }
-
+/*******************************************************************************
+*	void Drv_Uart0_Disable_Uart_Tx(void)
+Coupe l'uart
+*******************************************************************************/
+void Drv_Uart0_Disable_Uart_Tx(void)
+{
+  UCSR0B_TXEN0 = 0U;                           // désactive le transmetteur RS-232
+}
 /*******************************************************************************
 *	interrupt void Drv_Uart0_Interrupt(void)
 c'est ici que l'on réceptionne les caractères de la téléinfo
@@ -352,13 +360,42 @@ void Drv_Uart0_Shift_Tab(char *tmpbuff)
                     tmpbuff[i]=0;
                   }
       }
-      
-      
-      
     }
   
+}
+/*******************************************************************************************
+Int8U Uart_Request_To_Send(void)
 
+Ecrit dans la NVram la valeur 1 pour indiqué que le transmetteur est prêt
+à transmettre qqu chose sur l'UART.
+La fonction entre dans une boucle et attend de voir le bit relaché
+pour en sortir.
+Celui-ci doit être relaché par l'arduino en ecrivant un 0 dans le NVRAM
 
-  
-  
+In : void
+Out : Int8U
+********************************************************************************************/
+Int8U Uart_Request_To_Send(void)
+{
+  Int8U tmp = 1U;
+    Int8U tos = 1U;
+    // on ecrit à l'adresse NVRAM pour indiquer que l'on veut transmettre qqwu chose sur l'uART
+    // le nb de repetition d'envoie est remis à zero
+    Drv324p_I2C_RequestToSend();  
+    DrvTwi_Write_Byte(I2C_DEVICE_ADDR_DS1338,DS1338_NVRAM_REG_UART_RTS_TELEINFO,1U);
+    DrvTwi_Write_Byte(I2C_DEVICE_ADDR_DS1338,DS1338_NVRAM_REG_UART_REPEAT,0U);
+    tos = DrvTwi_Read_Byte(I2C_DEVICE_ADDR_DS1338,DS1338_NVRAM_REG_UART_RTS_TELEINFO);    
+    Drv324p_I2C_ClearToSend();
+
+    __watchdog_reset();
+    
+    while(tmp)
+    {
+      Drv324p_I2C_RequestToSend();
+      tmp = DrvTwi_Read_Byte(I2C_DEVICE_ADDR_DS1338,DS1338_NVRAM_REG_UART_RTS_TELEINFO);
+      Drv324p_I2C_ClearToSend();
+      __watchdog_reset();
+    }
+    
+    return 1UL;
 }

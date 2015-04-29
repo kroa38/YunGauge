@@ -14,7 +14,7 @@ Remember to enable interrupts from the main application after initializing the T
 ****************************************************************************/
 void TWI_Master_Initialise(void)
 {
-  Drv324p_RequestToSend();
+  Drv324p_I2C_RequestToSend();
 
   TWBR = TWI_TWBR;                                  // Set bit rate register (Baudrate). Defined in header file.
   TWSR = TWI_TWPS;                                  // Not used. Driver presumes prescaler to be 00.
@@ -24,7 +24,7 @@ void TWI_Master_Initialise(void)
          (0U<<TWEA)|(0U<<TWSTA)|(0U<<TWSTO)|        // No Signal requests.
          (0U<<TWWC);                                //
   
-  Drv324p_ClearToSend();
+  Drv324p_I2C_ClearToSend();
 }
 
 
@@ -42,7 +42,6 @@ static Int8U tmp;
 
          __delay_cycles(_20_MICROSECONDE);
          
-           Drv324p_RequestToSend();
 
           TWCR = (1U<<TWINT)|(1U<<TWSTA)|(1U<<TWEN);           // SEND START
          while ( (!(TWCR & (1U<<TWINT))) );
@@ -126,8 +125,6 @@ static Int8U tmp;
     S_Twi_Error_Flag.bRead=0U;
     }
 
-
-  Drv324p_ClearToSend();
   
    return(tmp);
 }
@@ -140,7 +137,7 @@ void DrvTwi_Write_Byte(Int8U Device_Addr,Int8U Word_Offset,Int8U Data)
            
            __delay_cycles(_20_MICROSECONDE);
            
-            Drv324p_RequestToSend();
+
 
           TWCR = (1U<<TWINT)|(1U<<TWSTA)|(1U<<TWEN);           // SEND START
           while ( (!(TWCR & (1U<<TWINT))) );
@@ -204,7 +201,6 @@ void DrvTwi_Write_Byte(Int8U Device_Addr,Int8U Word_Offset,Int8U Data)
     S_Twi_Error_Flag.bWrite=0U;
     }
 
-      Drv324p_ClearToSend();
 
 }
 
