@@ -78,12 +78,10 @@ void Srv_Out_Event_RTC_TIC(void)
                 rtc_nvram_sampling = DrvTwi_Read_Byte(I2C_DEVICE_ADDR_DS1338,DS1338_NVRAM_REG_SAMPLING);  
                 Drv324p_I2C_ClearToSend();
                 
-                if (rtc_nvram_sampling ==0)                         // 0 = presence du mode test
-                {
-                  Drv_DS1338_Synchro_With_RTC(SAMPLING_EVERY_MIN);
-                  teststring();                                     // teststring
-                  
-                }
+                if (rtc_nvram_sampling == 0U)                         // 0 = presence du mode test
+                 {
+                    teststring();                                     // teststring                
+                 }
                 else if(Drv_DS1338_Synchro_With_RTC(rtc_nvram_sampling)) 
                  {
                      
@@ -330,10 +328,12 @@ void Srv_Out_Event_Send_Teleinfo_to_Arduino(void)
           //Drv_Uart0_Shift_Tab(Tmp_Buffer_Water);       // elimine les zero de l'entête de la chaine
           //strcat(OutputBuffer,Tmp_Buffer_Water);       // ajout du comptage en eau écoulé depuis la dernière mesure ( 2 carcatères)
           
-          
-          Drv_Uart0_Init_Uart_Tx();                      // active le transmetteur RS-232            
-          Drv_Uart0_Send_String(OutputBuffer);
-          Drv_Uart0_Disable_Uart_Tx();                  // désactive le transmetteur RS-232 
+          if(Uart_Request_To_Send())
+          { 
+              Drv_Uart0_Init_Uart_Tx();                      // active le transmetteur RS-232            
+              Drv_Uart0_Send_String(OutputBuffer);
+              Drv_Uart0_Disable_Uart_Tx();                  // désactive le transmetteur RS-232 
+          }
           
           DrvLed_Led_On(LED_VERTE);
           DrvTime_Wait_Millisecondes(200UL);
@@ -361,24 +361,34 @@ void Srv_Out_Event_Send_Door_to_Arduino(void)
         { 
             S_Srv_Event.bDoorEvent=0;
 
-            Drv_Uart0_Init_Uart_Tx();                      // active le transmetteur RS-232 
+                                  // active le transmetteur RS-232 
             Sensor_DOOR_State = SENSOR_DOOR_PIN;           // mesure de l'état du capteur
             if(Sensor_DOOR_State == 1)
             {
-                Drv_Uart0_Send_String("DOOR CLOSE");
-                DrvLed_Led_On(LED_VERTE);         
+                if(Uart_Request_To_Send())
+                {
+                    Drv_Uart0_Init_Uart_Tx();
+                    Drv_Uart0_Send_String("DOOR CLOSE");
+                    Drv_Uart0_Disable_Uart_Tx();                             // désactive le transmetteur RS-232
+                }
+                DrvLed_Led_On(LED_VERTE);
             }
+
             else
             {
-                Drv_Uart0_Send_String("DOOR OPEN");
-                DrvLed_Led_Off(LED_VERTE);         
+                if(Uart_Request_To_Send())
+                {              
+                     Drv_Uart0_Init_Uart_Tx();  
+                     Drv_Uart0_Send_String("DOOR OPEN");
+                     Drv_Uart0_Disable_Uart_Tx();                             // désactive le transmetteur RS-232
+                }
+               DrvLed_Led_Off(LED_VERTE); 
             }
             
-            Drv_Uart0_Disable_Uart_Tx();                             // désactive le transmetteur RS-232 
-
              Drv324p_Interrupt(SET,INT_SENSOR_DOOR);    // autorise IT Door
-        }
+       }
 }
+ 
 
 /************************************************************************
 void Calc_Diff(void)

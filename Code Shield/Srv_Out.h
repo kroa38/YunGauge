@@ -6,7 +6,7 @@
 #define LENGHT_HCHP 14
 #define LENGHT_PTEC 9
 
-#define COUNTER_TIC_SECONDE   2    // 55 initialement
+#define COUNTER_TIC_SECONDE   55    // 55 initialement
 #define TRAMEFILTERCOUNT  15
 typedef volatile struct Struct_Srv_Event{
 
