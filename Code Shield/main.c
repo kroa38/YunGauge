@@ -54,6 +54,7 @@ General_Init();                                   // init globale
             DrvLed_Led_Off(LED_ROUGE);         
             DrvTime_Wait_Millisecondes(500UL); 
             DrvLed_Led_On(LED_ROUGE);
+            
         }
 
  }
@@ -92,7 +93,6 @@ void General_Init(void){
           Drv324p_Interrupt(SET,INT_SENSOR_DOOR);   // autorise pas la touche select
           Drv324p_Interrupt(SET,INT_RTC_TIC);       // set interrupt from external RTC            
           DrvSensor_Init();
-          //Drv_DS1338_Init();
           S_Interrupt_Atmega.bRTC_Tic_Int_Flag=0;
           asm("nop");
 

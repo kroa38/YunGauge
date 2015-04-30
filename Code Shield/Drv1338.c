@@ -97,7 +97,8 @@ Int8U Drv_DS1338_Synchro_With_RTC(Int8U sampling_rate)
   Int8U tmp=0U;
   Int8U retval=0U;
   
-  //Drv324p_I2C_RequestToSend();              // attente que la ligne CTS soit libre
+  Drv324p_I2C_RequestToSend();              // attente que la ligne CTS soit libre
+  
   if(sampling_rate == SAMPLING_EVERY_MIN)
   {  
       tmp=Drv_DS1338_read_minute();
@@ -218,7 +219,7 @@ Int8U Drv_DS1338_Synchro_With_RTC(Int8U sampling_rate)
       }
   }  
   
-  //Drv324p_I2C_ClearToSend();
+  Drv324p_I2C_ClearToSend();
   
   return(retval);
   

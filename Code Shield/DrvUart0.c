@@ -300,21 +300,25 @@ sortie : retourne dans Uart0_Buffer_Diff le chiffre sur 9 caracteres
 *******************************************************************************/
 void Drv_Uart0_Int32_To_Ascii(Int32U TabResult, char *tmpbuff)
 {
+  
+#define SizeInt32toAscii 9
+  
   Int32U decimal=0, i=0, rem=0;
       
-    for ( Int8U i=0; i<DIFF_COUNTER_LENGTH; i++ )
+    for ( Int8U i=0; i<SizeInt32toAscii; i++ )
   {
     tmpbuff[i]=0;
   }
 
-    while (i<DIFF_COUNTER_LENGTH)
+    while (i<SizeInt32toAscii)
     {
         rem = TabResult%10;
         TabResult/=10;
         decimal = rem+0x30;
-        tmpbuff[DIFF_COUNTER_LENGTH-1-i]=(Int8U)(decimal);  
+        tmpbuff[SizeInt32toAscii-1-i]=(Int8U)(decimal);  
         ++i;
     }    
+    tmpbuff[9]=0;
     
     
 }
@@ -378,13 +382,11 @@ Out : Int8U
 Int8U Uart_Request_To_Send(void)
 {
   Int8U tmp = 1U;
-    Int8U tos = 1U;
     // on ecrit à l'adresse NVRAM pour indiquer que l'on veut transmettre qqwu chose sur l'uART
     // le nb de repetition d'envoie est remis à zero
     Drv324p_I2C_RequestToSend();  
     DrvTwi_Write_Byte(I2C_DEVICE_ADDR_DS1338,DS1338_NVRAM_REG_UART_RTS_TELEINFO,1U);
-    DrvTwi_Write_Byte(I2C_DEVICE_ADDR_DS1338,DS1338_NVRAM_REG_UART_REPEAT,0U);
-    tos = DrvTwi_Read_Byte(I2C_DEVICE_ADDR_DS1338,DS1338_NVRAM_REG_UART_RTS_TELEINFO);    
+    DrvTwi_Write_Byte(I2C_DEVICE_ADDR_DS1338,DS1338_NVRAM_REG_UART_REPEAT,0U); 
     Drv324p_I2C_ClearToSend();
 
     __watchdog_reset();
@@ -394,7 +396,7 @@ Int8U Uart_Request_To_Send(void)
       Drv324p_I2C_RequestToSend();
       tmp = DrvTwi_Read_Byte(I2C_DEVICE_ADDR_DS1338,DS1338_NVRAM_REG_UART_RTS_TELEINFO);
       Drv324p_I2C_ClearToSend();
-      __watchdog_reset();
+      __delay_cycles(_100_MILLISECONDE);
     }
     
     return 1UL;

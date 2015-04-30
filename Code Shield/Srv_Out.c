@@ -73,14 +73,16 @@ void Srv_Out_Event_RTC_TIC(void)
            if(Counter_RTC_TIC++ >= COUNTER_TIC_SECONDE)
            {
                 Counter_RTC_TIC = 0U;
+                
+                Drv324p_I2C_RequestToSend();
                 rtc_nvram_sampling = DrvTwi_Read_Byte(I2C_DEVICE_ADDR_DS1338,DS1338_NVRAM_REG_SAMPLING);  
-               
+                Drv324p_I2C_ClearToSend();
+                
                 if (rtc_nvram_sampling ==0)                         // 0 = presence du mode test
                 {
-                  if(Drv_DS1338_Synchro_With_RTC(SAMPLING_EVERY_MIN)) 
-                  {
-                        teststring();                               // teststring
-                  }
+                  Drv_DS1338_Synchro_With_RTC(SAMPLING_EVERY_MIN);
+                  teststring();                                     // teststring
+                  
                 }
                 else if(Drv_DS1338_Synchro_With_RTC(rtc_nvram_sampling)) 
                  {
@@ -471,8 +473,9 @@ Out : void
 ********************************************************************************************/
 void teststring(void)
 {
-#define TEST_STRING_BUFFER 25
+#define TEST_STRING_BUFFER 26
   
+
   char OutputBuffer[TEST_STRING_BUFFER];
   char sum[2]={0,0};
   
@@ -481,8 +484,8 @@ void teststring(void)
         OutputBuffer[i]=0;
       }
   
-  char tabhp[14];
-  char tabhc[14];
+  char tabhp[10];
+  char tabhc[10];
   
   Index_HP_Test += 4UL;     
   
@@ -504,7 +507,7 @@ void teststring(void)
   
   
   asm("nop");
-  
+
   
   if(Uart_Request_To_Send())
     { 
@@ -513,9 +516,9 @@ void teststring(void)
       Drv_Uart0_Disable_Uart_Tx();          // désactive le transmetteur RS-232
     }  
   
-  DrvLed_Led_On(LED_ORANGE);         
-  DrvTime_Wait_Millisecondes(200UL); 
-  DrvLed_Led_Off(LED_ORANGE);
+  DrvLed_Led_On(LED_VERTE);         
+  DrvTime_Wait_Millisecondes(100UL); 
+  DrvLed_Led_Off(LED_VERTE);
  
   asm("nop");
   

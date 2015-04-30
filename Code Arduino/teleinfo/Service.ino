@@ -25,37 +25,43 @@ void Srv_read_uart_data(void)
       dataString = "";
       char MsgChar;
       char lastchar;
-      mySerial.begin(19200);               // réception de la téléinfo à 19200 bauds
       
-      #ifdef DEBUG
-      Serial.println(F("Autorise UART Receipt"));
-      #endif
+      unsigned long currentMillis;
+     
+      
+      //#ifdef DEBUG
+      //Serial.println(F("Autorise UART Receipt"));
+      //#endif
+      mySerial.begin(19200);               // réception de la téléinfo à 19200 bauds  
       
       I2C_RequestToSend();
       RTC.writenvram(DS1338_NVRAM_REG_UART_RTS_TELEINFO,0U);
       I2C_ClearToSend();
-      delay(100);
-      
-      while (mySerial.available())            // boucle si reception de caractères
-      { 
-       MsgChar=char(mySerial.read());
-       if (MsgChar != 0U) lastchar=MsgChar;
-        
-       if( (MsgChar>31) && (MsgChar<127))    // on ne prend pas en compte tous les caractères
-       {
-         dataString += MsgChar;
-         nb+=1;
-       }
+      currentMillis = millis(); 
+      while(millis()-currentMillis < 1000)
+      {
+        while (mySerial.available())            // boucle si reception de caractères
+        { 
+           MsgChar=char(mySerial.read());
+           if (MsgChar != 0U) lastchar=MsgChar;   // le dernier caractère contient le crc
+            
+           if( (MsgChar>31) && (MsgChar<127))    // on ne prend pas en compte tous les caractères
+           {
+             dataString += MsgChar;
+             nb+=1;
+           }
+        }
       }
-      
       mySerial.end();
+      mySerial.flush();
       
       if(nb)
       {
-
+          //Serial.println(lastchar);
           /* calcul du CRC de la trame reçue */
-          char strln,crc;
+          char strln=0,crc=0;
           strln = dataString.length();
+          
            for ( char i=0; i<strln-1; i++ )
           {
             crc = (crc + dataString.charAt(i)) & 0x3F;
@@ -63,29 +69,28 @@ void Srv_read_uart_data(void)
           crc = crc + 0x20;
           
           #ifdef DEBUG
-          Serial.print(F("Event Received..!  "));
-          //Serial.print(nb,DEC);
-          Serial.print(' ');
-          Serial.println(dataString);
+          //Serial.print(F("Event Received..! : "));
+          Serial.print(dataString);
+          
           if(crc == lastchar)
-            Serial.println("CRC OK.....");
+            Serial.println("  OK");
           else
-            Serial.println("CRC not OK !!!!");
+            Serial.println("  Bad CRC");
           #endif
           
-          /* vide buffer reception */
-          mySerial.flush();
-         
+        
          // Si CRC ok on autorise l'écriture sur fichier
          if(crc == lastchar)
          {
             if(dataString.startsWith(F("DOOR")))
             {
               Event.StoreEventDoorToFile = 1;
+              Blink_Led(2);
             }
             else
             {
               Event.StoreEventTeleinfoToFile = 1;
+              Blink_Led(1);
             }
          }
       }
