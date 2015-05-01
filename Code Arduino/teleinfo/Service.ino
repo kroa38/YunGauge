@@ -9,7 +9,7 @@ void Srv_Out_Event(void)
    Srv_PingGoogle();
    Srv_Ntp_To_Rtc_Update();
    Srv_StoreEventTeleinfoToFile();
-   Srv_StoreEventDoorToFile();
+   //Srv_StoreEventDoorToFile();
    
 }
 /***********************************************************
@@ -38,7 +38,7 @@ void Srv_read_uart_data(void)
       RTC.writenvram(DS1338_NVRAM_REG_UART_RTS_TELEINFO,0U);
       I2C_ClearToSend();
       currentMillis = millis(); 
-      while(millis()-currentMillis < 1000)
+      while(millis()-currentMillis < 500)
       {
         while (mySerial.available())            // boucle si reception de caractères
         { 
@@ -67,7 +67,8 @@ void Srv_read_uart_data(void)
             crc = (crc + dataString.charAt(i)) & 0x3F;
           }
           crc = crc + 0x20;
-          
+          dataString.setCharAt(strln-1,0);
+          dataString.setCharAt(strln-2,0);
           #ifdef DEBUG
           //Serial.print(F("Event Received..! : "));
           Serial.print(dataString);

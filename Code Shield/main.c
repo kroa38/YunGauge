@@ -25,8 +25,8 @@ extern  Struct_Atmega_Int S_Interrupt_Atmega;
 extern  Struct_Srv_Event S_Srv_Event;
 extern  Struct_Twi_Error_Flag S_Twi_Error_Flag;
 
-Int32U Index_HP_Test=1519996;
-Int32U Index_HC_Test=1087356;
+Int32U Index_HP_Test=4000000;     
+Int32U Index_HC_Test=3000000;     
 
 /**********************************************************************************************************************
 *                                                                                                                     *
@@ -44,15 +44,15 @@ General_Init();                                   // init globale
           {        
             Need_Reset();
             Srv_Out_Event();    
-               __watchdog_reset();
+            __watchdog_reset();
           }
 
         while(1U)                           // on atterit ici lors d'une erreur I2C
         {
             S_Twi_Error_Flag.bDS1338S_ChipSet ? DrvLed_Led_On(LED_ROUGE):DrvLed_Led_Off(LED_ROUGE);        
-            DrvTime_Wait_Millisecondes(500UL);
+            __delay_cycles(_300_MILLISECONDE);
             DrvLed_Led_Off(LED_ROUGE);         
-            DrvTime_Wait_Millisecondes(500UL); 
+            __delay_cycles(_300_MILLISECONDE);
             DrvLed_Led_On(LED_ROUGE);
             
         }
@@ -63,15 +63,15 @@ General_Init();                                   // init globale
 /***********************************************************************************************************************
 *	void General_Init(void)    
 *
-* On initilise tous les périphériques ici.
- Sauf le AD7842 ainsi que le ADV7513 qui sont initialisés lors de la détection du mode video présent.
- Les ADV7842 et ADV7513 sont en power_down dès l'appel de la fonction Drv324P_Set_IO()
+* On initilise tous les pÃ©riphÃ©riques ici.
+ Sauf le AD7842 ainsi que le ADV7513 qui sont initialisÃ©s lors de la dÃ©tection du mode video prÃ©sent.
+ Les ADV7842 et ADV7513 sont en power_down dÃ¨s l'appel de la fonction Drv324P_Set_IO()
 ***********************************************************************************************************************/
 void General_Init(void){    
     
   
           __disable_interrupt();
-          Drv324p_Disable_Watchdog();               // désactive le watchdog au depart
+          Drv324p_Disable_Watchdog();               // dÃ©sactive le watchdog au depart
           Drv324P_Set_IO();                         //Initilise les IO
           Wait_For_Yun();                           //attente demarrage carte yun 
           DrvLed_Led_On(LED_ROUGE);
@@ -100,7 +100,7 @@ void General_Init(void){
 /***********************************************************************************************************************
 *	void Wait_For_Yun(void)    
 *
-on attend ici que le Yun libère la ligne 4 qui informe qu'il est occupé
+on attend ici que le Yun libÃ¨re la ligne 4 qui informe qu'il est occupÃ©
 
 ***********************************************************************************************************************/
 void Wait_For_Yun(void)
@@ -124,8 +124,8 @@ void Wait_For_Yun(void)
 /***********************************************************************************************************************
 *	void Need_Reset(void)   
 *
-Utilisé dans la boucle principale.
-SI l'AVR du  Yun met à 1 la pin BUSY alors çela fera entrer en reset l'AVR
+UtilisÃ© dans la boucle principale.
+SI l'AVR du  Yun met Ã  1 la pin BUSY alors Ã§ela fera entrer en reset l'AVR
 
 ***********************************************************************************************************************/
 void Need_Reset(void)

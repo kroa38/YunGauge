@@ -241,7 +241,7 @@ void Drv324p_I2C_RequestToSend(void)
       while(tmp)
       {
       tmp = CTS_PIN;
-      __delay_cycles(_50_MILLISECONDE);
+      __delay_cycles(_100_MILLISECONDE);
       }      
     }
     
@@ -254,7 +254,7 @@ Libère la ligne RTS
 *******************************************************************************/
 void Drv324p_I2C_ClearToSend(void)
 {
-    __delay_cycles(_50_MILLISECONDE);
+    __delay_cycles(_100_MILLISECONDE);
     RTS_PORT = 0; 
     
 

@@ -17,10 +17,10 @@ DEFINITIONS
 #define RTSPIN 6                                  // n° de la pin RTS (output)
 #define CTSPIN 5                                  // n° de la pin CTS (INPUT)
 #define LEDVERTE 13                               // LED verte pour test
-#undef DEBUG                                     // sortie console pour debug
+#define DEBUG                                     // sortie console pour debug
 #define HOUR_ADJUST_CHECK 50UL*60UL*1000UL        // interval check pour la maj de l'heure de internet (50 minutes)
 #define HOUR_ADJUST_CHECK_THIN 5UL*60UL*1000UL    // interval check pour la maj de l'heure de internet (1 minutes)
-#define WAITFORLININO  60                          // temps d'attente de démarrage de linino (mini 50s)
+#define WAITFORLININO  60                         // temps d'attente de démarrage de linino (mini 50s)
 #define DS1338_NVRAM_REG_SAMPLING              0  // Adresse offset Nvram du DS1338 pour la periode d'échantillonage
 #define DS1338_NVRAM_REG_UART_RTS_TELEINFO     1  // RTS qui dit qu'un message teleinfo est reçu
 #define DS1338_NVRAM_REG_UART_REPEAT           2  // demande de renvoie du message
@@ -68,10 +68,10 @@ void loop()
 {
   /* gestionnaire d'évenements */
     Is_Uart_Data();
-    delay(500);
     Srv_Out_Event();  
+    delay(500);
     #ifdef DEBUG
-    Serial.flush(); 
+    //Serial.flush(); 
     #endif
 }
 /********************************************************************************
@@ -157,10 +157,17 @@ Libère la ligne RTS
 *******************************************************************************/
 void I2C_RequestToSend(void)
 {
-        
-    if(digitalRead(CTSPIN))
+    uint8_t tmp;    
+    
+    tmp = digitalRead(CTSPIN);
+    
+    if(tmp)
     {
-      while(digitalRead(CTSPIN));  
+      while(tmp)
+      {
+        tmp = digitalRead(CTSPIN);
+        delay(100);
+      } 
     }
     
     digitalWrite(RTSPIN, HIGH);
@@ -172,6 +179,7 @@ Libère la ligne RTS
 *******************************************************************************/
 void I2C_ClearToSend(void)
 {
+    delay(100);
     digitalWrite(RTSPIN, LOW); 
 }
 /***********************************************************
@@ -262,7 +270,7 @@ char *getdate(char format)
     
   I2C_RequestToSend();
   DateTime now = RTC.now();
-  I2C_ClearToSend();
+
   
   if(format==DATE_ISO8601)
   {
@@ -296,6 +304,8 @@ char *getdate(char format)
     str += String(now.minute(), DEC);
     
     str.toCharArray(date_array,25);
+    
+    I2C_ClearToSend();
     
     return date_array;    
   }
@@ -347,11 +357,14 @@ void WaitForLinino()
     Serial.println(F("Linux is ready "));
     #endif
     
-    I2C_RequestToSend();
-    
+
     jsonvalue = run_python_script_config("sampling_interval"); // lecture du fichier config.json 
+    
+    I2C_RequestToSend();
     RTC.writenvram(DS1338_NVRAM_REG_SAMPLING,jsonvalue);             // periode d'échantillonnage de la teleinfo pour le shield (en minutes) 
+    delay(100);                                                      // ettend un peu entre chauqye w/r
     jsonvalue =  RTC.readnvram(DS1338_NVRAM_REG_SAMPLING);           // affiche le contenu de la nvram à l'adresse 0 
+    I2C_ClearToSend(); 
     
     #ifdef DEBUG 
     Serial.print(F("Nvram Sampling Teleinfo every "));  
@@ -371,10 +384,13 @@ void WaitForLinino()
     Serial.println(F("Liberation pin BUSY"));  
     #endif
     
+    I2C_RequestToSend();
     RTC.writeSqwPinMode(SquareWave1HZ);	                       // clignotement de la led toutes les secondes
+    I2C_ClearToSend();
+    
     digitalWrite(BUSYPIN, LOW);        // BUSY = 0 la carte Shield peut demarrer.
     
-    I2C_ClearToSend();  
+
 
 }
 /***********************************************************
