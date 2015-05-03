@@ -19,3 +19,7 @@ pip install httplib2
 pip install google-api-python-client
 pip install gspread
 pip install plotly
+/etc/init.d/vsftpd start
+/etc/init.d/vsftpd enable
+mkdir /mnt/sda1/yungauge
+
