@@ -72,18 +72,20 @@ void Srv_Out_Event_RTC_TIC(void)
                       
            if(Counter_RTC_TIC++ >= COUNTER_TIC_SECONDE)
            {
-                Counter_RTC_TIC = 0U;
                 
                 Drv324p_I2C_RequestToSend();
-                rtc_nvram_sampling = DrvTwi_Read_Byte(I2C_DEVICE_ADDR_DS1338,DS1338_NVRAM_REG_SAMPLING);  
+                rtc_nvram_sampling = DrvTwi_Read_Byte(I2C_DEVICE_ADDR_DS1338,DS1338_NVRAM_REG_SAMPLING);   
                 Drv324p_I2C_ClearToSend();
                 
                 if (rtc_nvram_sampling == 0U)                         // 0 = presence du mode test
                  {
-                    teststring();                                     // teststring                
+                    teststring();                                     // teststring
+                    Counter_RTC_TIC = 52U;                            // on entre toutes les 3 secondes en mode test
+                    
                  }
                 else if(Drv_DS1338_Synchro_With_RTC(rtc_nvram_sampling)) 
                  {
+                    Counter_RTC_TIC = 0U;
                     Drv_Uart0_Init_Uart_Rx();                      // autorise la réception TELEINFO 
                     DrvLed_Led_On(LED_ORANGE);         
                     DrvTime_Wait_Millisecondes(100UL); 
