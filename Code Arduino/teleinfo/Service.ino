@@ -272,7 +272,7 @@ void Srv_StoreEventTeleinfoToFile()
    {
     Event.StoreEventTeleinfoToFile = 0;
         
-    File dataFile = FileSystem.open("/root/python/teleinfo.log", FILE_APPEND);
+    File dataFile = FileSystem.open("/mnt/sda1/yungauge/teleinfo.log", FILE_APPEND);
 
     // if the file is available, write to it:
     if (dataFile) 
@@ -287,14 +287,14 @@ void Srv_StoreEventTeleinfoToFile()
       dataFile.println(dataString);
       // store event to file
       dataFile.close();
-      
-      Blink_Led(2);      
+      Blink_Led(2);     
+
        
     }
     else
     {
       #ifdef DEBUG  
-      Serial.print(F("Error File Teleinfo.log ...."));
+      Serial.print(F("Error File teleinfo.log ...."));
       #endif
       while(1)
       {
@@ -320,7 +320,7 @@ void Srv_StoreEventDoorToFile()
    {
     Event.StoreEventDoorToFile = 0;
         
-    File dataFile = FileSystem.open("/root/python/door.log", FILE_APPEND);
+    File dataFile = FileSystem.open("/mnt/sda1/yungauge/door.log", FILE_APPEND);
 
     // if the file is available, write to it:
     if (dataFile) 
