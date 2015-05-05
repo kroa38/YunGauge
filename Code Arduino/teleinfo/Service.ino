@@ -272,7 +272,7 @@ void Srv_StoreEventTeleinfoToFile()
    {
     Event.StoreEventTeleinfoToFile = 0;
         
-    File dataFile = FileSystem.open("/root/yungauge/scripts/python/teleinfo.log", FILE_APPEND);
+    File dataFile = FileSystem.open("/root/python/teleinfo.log", FILE_APPEND);
 
     // if the file is available, write to it:
     if (dataFile) 
@@ -320,7 +320,7 @@ void Srv_StoreEventDoorToFile()
    {
     Event.StoreEventDoorToFile = 0;
         
-    File dataFile = FileSystem.open("/root/yungauge/scripts/python/door.log", FILE_APPEND);
+    File dataFile = FileSystem.open("/root/python/door.log", FILE_APPEND);
 
     // if the file is available, write to it:
     if (dataFile) 

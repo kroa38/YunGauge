@@ -215,7 +215,7 @@ int run_python_script_config(char *str)
   Serial.println(str);
   Serial.flush();
   #endif
-  shell.begin(F("/root/yungauge/scripts/python/config.py"));
+  shell.begin(F("/root/python/config.py"));
   shell.addParameter(str);
   shell.run();
   while (shell.available())
