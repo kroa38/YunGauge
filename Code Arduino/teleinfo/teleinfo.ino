@@ -329,13 +329,13 @@ char *getdate(char format)
     str.toCharArray(date_array,25);
   }
   
-  else if(format==UNIX_TIME)
+  else if(format==UNIX_TIME)  // insert unix epoch time in second
   {
     String str = String(now.unixtime(), DEC); 
     str.toCharArray(date_array,25);
   }  
   
-  else if(format==DOW)
+  else if(format==DOW)	// insert day of week
   {
     String str = String(now.dayOfWeek(), DEC); 
     str.toCharArray(date_array,25);
