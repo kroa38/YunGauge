@@ -5,10 +5,11 @@ Fonction de gestion des evenements
 void Srv_Out_Event(void)
 {
    Srv_read_uart_data();
-   Srv_AdjustDateEveryDay();   
-   Srv_PingGoogle();
-   Srv_Ntp_To_Rtc_Update();
-   Srv_StoreEventTeleinfoToFile();
+   //Srv_AdjustDateEveryDay();   
+   //Srv_PingGoogle();
+   //isConnectedToInternet();
+   //Srv_Ntp_To_Rtc_Update();
+   //Srv_StoreEventTeleinfoToFile();
    //Srv_StoreEventDoorToFile();
    
 }
@@ -71,6 +72,9 @@ void Srv_read_uart_data(void)
           dataString.setCharAt(strln-2,0);
           #ifdef DEBUG
           //Serial.print(F("Event Received..! : "));
+          dataString += ',';
+          dataString += getdate(DATE_ISO8601);
+          
           Serial.print(dataString);
           
           if(crc == lastchar)
@@ -194,7 +198,51 @@ uint8_t Srv_PingGoogle(void)
   }
 
 }
-
+/**********************************************************************
+uint8_t isConnectedToInternet()
+permet de savoir si internet est On ou OFF
+utilise un process shell (plus rapide qu'en python)
+In: void
+Out : uint8_t (1 : internet ON   0: Internet OFF)
+************************************************************************/
+uint8_t isConnectedToInternet() 
+{
+  if(Event.PingGoogle)
+  {
+    Event.PingGoogle=0;
+    
+  #ifdef DEBUG
+  Serial.print(F("Check Internet"));     
+  #endif
+  
+  Process p;
+  uint8_t result=0;
+  
+  // Check if ping to google.com is successful
+  p.runShellCommand("ping -W 1 -c 4 www.google.com >& /dev/null && echo 1 || echo 0");
+  // Wait until execution is completed, return result
+  while(p.running()); 
+  result = p.parseInt();
+  
+  if(result==1)
+    {
+    #ifdef DEBUG
+    Serial.println(F("Internet is UP"));     
+    #endif
+    Event.Ntp_To_Rtc_Update = 1;
+    }
+  else if(result==0)
+    {
+    #ifdef DEBUG
+    Serial.println(F("Internet is DOWN"));     
+    #endif      
+    Event.Ntp_To_Rtc_Update = 0;  
+    }  
+   
+  return result;
+  }
+  
+}
 
 /***********************************************************
 void Ntp_To_Rtc_Update();
@@ -282,7 +330,7 @@ void Srv_StoreEventTeleinfoToFile()
       #endif
       //construct stringll
       dataString += ',';
-      dataString += getdate(DATE_ISO8601);
+      dataString += getdate(DOW);
       dataFile.println(dataString);
       // store event to file
       dataFile.close();

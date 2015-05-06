@@ -20,7 +20,7 @@ DEFINITIONS
 #define DEBUG                                     // sortie console pour debug
 #define HOUR_ADJUST_CHECK 50UL*60UL*1000UL        // interval check pour la maj de l'heure de internet (50 minutes)
 #define HOUR_ADJUST_CHECK_THIN 5UL*60UL*1000UL    // interval check pour la maj de l'heure de internet (1 minutes)
-#define WAITFORLININO  60                         // temps d'attente de démarrage de linino (mini 50s)
+#define WAITFORLININO  1                         // temps d'attente de démarrage de linino (mini 50s)
 #define DS1338_NVRAM_REG_SAMPLING              0  // Adresse offset Nvram du DS1338 pour la periode d'échantillonage
 #define DS1338_NVRAM_REG_UART_RTS_TELEINFO     1  // RTS qui dit qu'un message teleinfo est reçu
 #define DS1338_NVRAM_REG_UART_REPEAT           2  // demande de renvoie du message
@@ -28,6 +28,8 @@ DEFINITIONS
 #define RX_BUFFER_SIZE 70
 #define DATE_ISO8601 1
 #define DATE_CUSTOM 2
+#define UNIX_TIME 3
+#define DOW 4
 /********************************************************************************
 VARIABLES GLOBALES
 ********************************************************************************/
@@ -263,7 +265,8 @@ out : pointeur vers date_array (variable globale)
 ************************************************************/
 char *getdate(char format)
 {
-  for(char i=0;i<WAITFORLININO;i++)
+  
+  for(char i=0;i<DATE_STRING_SIZE;i++)
   {
     date_array[i] = 0;
   }
@@ -271,6 +274,23 @@ char *getdate(char format)
   I2C_RequestToSend();
   DateTime now = RTC.now();
 
+  uint8_t nowmonth = now.month();
+  uint8_t nowday = now.day();
+  uint8_t nowdow = now.dayOfWeek();
+  uint8_t isdst;
+    
+  if (nowmonth < 3 || nowmonth > 10)  isdst= 0U; 
+  else if (nowmonth > 3 && nowmonth < 10)  isdst= 1U;
+  else if (nowmonth == 3) 
+  { 
+    int previousSunday = nowday - nowdow;
+    isdst= (previousSunday >= 25);
+  }
+  else if (nowmonth == 10)
+  {
+   int previousSunday = nowday - nowdow;
+   isdst = (previousSunday < 25);
+  }
   
   if(format==DATE_ISO8601)
   {
@@ -285,12 +305,13 @@ char *getdate(char format)
     str += String(now.minute(), DEC);
     str += ':'; 
     str += String(now.second(), DEC); 
-    str += String("+0100");
+    
+    if(isdst==0) str += String("+0100");
+    else if(isdst==1) str += String("+0200");
     
     str.toCharArray(date_array,25);
-    
-    return date_array;
   }
+  
   else if(format==DATE_CUSTOM)
   {
     String str = String(now.day(), DEC); 
@@ -304,11 +325,21 @@ char *getdate(char format)
     str += String(now.minute(), DEC);
     
     str.toCharArray(date_array,25);
-    
-    I2C_ClearToSend();
-    
-    return date_array;    
   }
+  
+  else if(format==UNIX_TIME)
+  {
+    String str = String(now.unixtime(), DEC); 
+    str.toCharArray(date_array,25);
+  }  
+  
+  else if(format==DOW)
+  {
+    String str = String(now.dayOfWeek(), DEC); 
+    str.toCharArray(date_array,25);
+  }   
+  I2C_ClearToSend();
+  return date_array; 
 }
 /***********************************************************
 void Srv_PrintLininoDate()
@@ -413,3 +444,99 @@ void Is_Uart_Data(void)
      }
 }
 
+
+/////////////////////////////////////////////////////////////////////
+// Synchronize clock using NTP
+void setClock() {  
+  Process p;
+  
+  Serial.println("Setting clock.");
+  
+  // Sync clock with NTP
+  p.runShellCommand("ntpd -nqp 0.openwrt.pool.ntp.org");
+  
+  // Block until clock sync is completed
+  while(p.running());
+}
+/////////////////////////////////////////////////////////////////////
+// Return a string date format
+// example:  date -d @1430665070 +"%d-%m-%Y %T %z"
+// return : 03-05-2015 16:57:50 +0200
+// in : uint long : epoch unix time
+// out : char * (pointer to string)
+
+char  *epochinTime(unsigned long millisAtEpoch) 
+{
+  char epochCharArray[50] = "";
+  char buf[12];
+  ltoa(millisAtEpoch,buf,10);
+
+  String stra = "@";
+  String strb(buf);
+  stra +=strb;
+
+  String fmt = "+\"%d-%m-%Y %T %z\"";
+  
+  Process time;   
+  time.begin("date");
+  time.addParameter("-d");
+  time.addParameter(stra);
+  time.addParameter(fmt);
+  time.run();
+   
+  while (time.available() > 0) 
+  {
+    time.readString().toCharArray(epochCharArray, 50);
+  }
+  
+  return epochCharArray;
+  
+}
+/////////////////////////////////////////////////////////////////////
+// Return timestamp of Linino
+// in : none
+// out :unsigned long
+
+unsigned long timeInEpoch()
+{
+  Process time;                   // process to run on Linuino
+  char epochCharArray[12] = "";   // char array to be used for atol
+
+  // Get UNIX timestamp
+  time.begin("date");
+  time.addParameter("+%s");
+  time.run();
+  
+  // When execution is completed, store in charArray
+  while (time.available() > 0) {
+    time.readString().toCharArray(epochCharArray, 12);
+  }
+  
+  // Return long with timestamp
+  return atol(epochCharArray);
+}
+/////////////////////////////////////////////////////////////////////
+// calc if we are in a DST time
+// in : none
+// out :uint8_t
+uint8_t IsDst(void)
+{
+  I2C_RequestToSend();
+  DateTime now = RTC.now();
+
+  uint8_t nowmonth = now.month();
+  uint8_t nowday = now.day();
+  uint8_t nowdow = now.dayOfWeek();
+    
+    if (nowmonth < 3 || nowmonth > 10)  return 0U; 
+    if (nowmonth > 3 && nowmonth < 10)  return 1U; 
+
+    int previousSunday = nowday - nowdow;
+
+    if (nowmonth == 3) return previousSunday >= 25;
+    if (nowmonth == 10) return previousSunday < 25;
+    
+   I2C_ClearToSend();
+   
+   return 0U; // this line never gonna happend
+}
