@@ -259,7 +259,8 @@ void PrintRtcDate()
 void *getdate()
 
 renvoie la date au format ISO8601 ou CUSTOM
-dans le tableau date_array
+dans le tableau date_array.
+calcul de l'heure d'été 
 in : format
 out : pointeur vers date_array (variable globale)
 ************************************************************/
@@ -273,11 +274,11 @@ char *getdate(char format)
     
   I2C_RequestToSend();
   DateTime now = RTC.now();
-
+  //calcul now DST time
   uint8_t nowmonth = now.month();
   uint8_t nowday = now.day();
   uint8_t nowdow = now.dayOfWeek();
-  uint8_t isdst;
+  uint8_t isdst=0;
     
   if (nowmonth < 3 || nowmonth > 10)  isdst= 0U; 
   else if (nowmonth > 3 && nowmonth < 10)  isdst= 1U;
@@ -300,7 +301,8 @@ char *getdate(char format)
     str += '-';
     str += String(now.day(), DEC);  
     str += 'T';  
-    str += String(now.hour(), DEC); 
+    if(isdst==0) str += String(now.hour()-1U, DEC); 
+    else if(isdst==1) str += String(now.hour()-2U, DEC);
     str += ':';
     str += String(now.minute(), DEC);
     str += ':'; 
