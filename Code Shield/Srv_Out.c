@@ -77,11 +77,10 @@ void Srv_Out_Event_RTC_TIC(void)
                 rtc_nvram_sampling = DrvTwi_Read_Byte(I2C_DEVICE_ADDR_DS1338,DS1338_NVRAM_REG_SAMPLING);   
                 Drv324p_I2C_ClearToSend();
                 
-                if (rtc_nvram_sampling == 0U)                         // 0 = presence du mode test
+                if (rtc_nvram_sampling == 0U)                            // 0 = presence du mode test
                  {
-                    teststring();                                     // teststring
-                    Counter_RTC_TIC = 52U;                            // on entre toutes les 3 secondes en mode test
-                    
+                        Counter_RTC_TIC = 55U;  // on entre toutes les 5 secondes en mode test
+                        teststring();                                     // teststring                        
                  }
                 else if(Drv_DS1338_Synchro_With_RTC(rtc_nvram_sampling)) 
                  {
