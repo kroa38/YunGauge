@@ -1,7 +1,13 @@
 /Debug
 /settings
+/shield_d90
 *.dep
 *.ewp
 *.eww
 *.aps
 *.aws
+*.atsln
+*.xslt
+*.xml
+*.ewd
+*.atsuo
