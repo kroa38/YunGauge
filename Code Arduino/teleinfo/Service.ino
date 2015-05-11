@@ -5,11 +5,10 @@ Fonction de gestion des evenements
 void Srv_Out_Event(void)
 {
    Srv_read_uart_data();
-   //Srv_AdjustDateEveryDay();   
-   //Srv_PingGoogle();
-   //isConnectedToInternet();
-   //Srv_Ntp_To_Rtc_Update();
-   //Srv_StoreEventTeleinfoToFile();
+   Srv_AdjustDateEveryDay();   
+   Srv_PingGoogle();
+   Srv_Ntp_To_Rtc_Update();
+   Srv_StoreEventTeleinfoToFile();
    //Srv_StoreEventDoorToFile();
    
 }

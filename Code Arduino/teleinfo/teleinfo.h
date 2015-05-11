@@ -10,7 +10,7 @@ DEFINITIONS
 /*******************************************************************************/
 #define HOUR_ADJUST_CHECK 50UL*60UL*1000UL        // interval check pour la maj de l'heure de internet (50 minutes)
 #define HOUR_ADJUST_CHECK_THIN 5UL*60UL*1000UL    // interval check pour la maj de l'heure de internet (1 minutes)
-#define WAITFORLININO  1                          // temps d'attente de démarrage de linino (mini 50s)
+#define WAITFORLININO  65                         // temps d'attente de démarrage de linino (mini 50s)
 /*******************************************************************************/
 #define DS1338_NVRAM_REG_SAMPLING              0  // Adresse offset Nvram du DS1338 pour la periode d'échantillonage
 #define DS1338_NVRAM_REG_UART_RTS_TELEINFO     1  // RTS qui dit qu'un message teleinfo est reçu
