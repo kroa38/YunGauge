@@ -26,20 +26,17 @@ void Srv_read_uart_data(void)
       dataString = "";
       char MsgChar;
       char lastchar;
-      
-      unsigned long currentMillis;
      
-      
-      //#ifdef DEBUG
-      //Serial.println(F("Autorise UART Receipt"));
-      //#endif
+      unsigned long currentMillis;
+
       mySerial.begin(19200);               // réception de la téléinfo à 19200 bauds  
       
       I2C_RequestToSend();
       RTC.writenvram(DS1338_NVRAM_REG_UART_RTS_TELEINFO,0U);
       I2C_ClearToSend();
       currentMillis = millis(); 
-      while(millis()-currentMillis < 500)
+      
+      while(millis()-currentMillis < 500)      // boucle 500ms mini
       {
         while (mySerial.available())            // boucle si reception de caractères
         { 
@@ -53,12 +50,12 @@ void Srv_read_uart_data(void)
            }
         }
       }
+      
       mySerial.end();
       mySerial.flush();
       
       if(nb)
       {
-          //Serial.println(lastchar);
           /* calcul du CRC de la trame reçue */
           char strln=0,crc=0;
           strln = dataString.length();
@@ -68,21 +65,29 @@ void Srv_read_uart_data(void)
             crc = (crc + dataString.charAt(i)) & 0x3F;
           }
           crc = crc + 0x20;
-          dataString.setCharAt(strln-1,0);
-          dataString.setCharAt(strln-2,0);
-          #ifdef DEBUG
-          //Serial.print(F("Event Received..! : "));
-          dataString += ',';
-          dataString += getdate(DATE_ISO8601);
-          
-          Serial.print(dataString);
-          
+
           if(crc == lastchar)
-            Serial.println("  OK");
-          else
-            Serial.println("  Bad CRC");
-          #endif
-          
+          {
+            dataString.setCharAt(strln-1,0x20);  // supress 'crc char'
+            dataString.setCharAt(strln-2,0x20);  // supress ','
+            dataString.trim();                   // enlève espaces en fin de chaine
+            dataString += ',';
+  
+            if(Event.Test_Mode)
+            {
+              dataString += epochinTime(epochunix);
+              epochunix += EPOCH_INCREMENT;
+            }
+            else
+            {
+              dataString += getdate(DATE_ISO8601);
+            }
+  
+            #ifdef DEBUG
+            Serial.println(dataString);
+            #endif
+          }
+
         
          // Si CRC ok on autorise l'écriture sur fichier
          if(crc == lastchar)
@@ -99,12 +104,7 @@ void Srv_read_uart_data(void)
             }
          }
       }
-      else
-      {
-          #ifdef DEBUG
-          Serial.println(F("No data received from UART"));
-          #endif
-      }
+
       
    }
 }
@@ -113,7 +113,7 @@ void Srv_AdjustDateEveryDay()
 
 ajuste la RTC avec l'heure de linino.
 ************************************************************/
-void Srv_AdjustDateEveryDay()
+void Srv_AdjustDateEveryDay(void)
 {
 
   unsigned long currentMillis,adjust_at ;
@@ -205,7 +205,7 @@ utilise un process shell (plus rapide qu'en python)
 In: void
 Out : uint8_t (1 : internet ON   0: Internet OFF)
 ************************************************************************/
-uint8_t isConnectedToInternet() 
+uint8_t isConnectedToInternet(void) 
 {
   if(Event.PingGoogle)
   {
@@ -249,7 +249,7 @@ void Ntp_To_Rtc_Update();
 Récupère la date et l'heure de Linino
 et met à jour la RTC
 ************************************************************/
-void Srv_Ntp_To_Rtc_Update()
+void Srv_Ntp_To_Rtc_Update(void)
 {
      
   if(Event.Ntp_To_Rtc_Update)
@@ -313,7 +313,7 @@ et copie sur le fichier teleinfo.txt
 
 ************************************************************/
 
-void Srv_StoreEventTeleinfoToFile()
+void Srv_StoreEventTeleinfoToFile(void)
 {
   
   if(Event.StoreEventTeleinfoToFile)
@@ -328,12 +328,10 @@ void Srv_StoreEventTeleinfoToFile()
       #ifdef DEBUG 
       Serial.println(F("Store to file teleinfo.log ..."));
       #endif
-      //construct stringll
-      dataString += ',';
-      dataString += getdate(DOW);
+      // store to file
       dataFile.println(dataString);
-      // store event to file
       dataFile.close();
+      // blink led green
       Blink_Led(2);           
     }
     else
@@ -347,8 +345,6 @@ void Srv_StoreEventTeleinfoToFile()
       delay(50);
       }
     }
-    
-
   }
   
 }
@@ -359,7 +355,7 @@ Met en forme la donnée reçu par l'uart avec la date
 et copie sur le fichier door.txt
 ************************************************************/
 
-void Srv_StoreEventDoorToFile()
+void Srv_StoreEventDoorToFile(void)
 {
   if(Event.StoreEventDoorToFile)
    {
@@ -370,19 +366,13 @@ void Srv_StoreEventDoorToFile()
     // if the file is available, write to it:
     if (dataFile) 
     {
-
       #ifdef DEBUG 
       Serial.println(F("Store to file door.log ..."));
       #endif
-      //construct string
-      dataString += ',';
-      dataString += getdate(DATE_ISO8601);
-      dataFile.println(dataString);
       // store event to file
+      dataFile.println(dataString);
       dataFile.close();
-      
-      Blink_Led(2);                        
-      
+      Blink_Led(2);                            
     }
     else
     {
