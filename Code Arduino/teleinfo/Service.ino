@@ -8,7 +8,7 @@ void Srv_Out_Event(void)
    Srv_AdjustDateEveryDay();   
    Srv_PingGoogle();
    Srv_Ntp_To_Rtc_Update();
-   Srv_StoreEventTeleinfoToFile();
+   //Srv_StoreEventTeleinfoToFile();
    //Srv_StoreEventDoorToFile();
    
 }
@@ -74,14 +74,22 @@ void Srv_read_uart_data(void)
   
             if(Event.Test_Mode)
             {
+              dataString += '"';
               dataString += epochinTime(epochunix);
+              dataString += '"';
               epochunix += EPOCH_INCREMENT;
             }
             else
             {
-              dataString += getdate(DATE_ISO8601);
+              dataString += '"';
+              dataString += get_rtc_date(DATE_ISO8601);
+              dataString += '"';
             }
-  
+            String OutputString = "[";
+            OutputString += dataString;
+            OutputString += "]";
+            dataString = OutputString;
+            
             #ifdef DEBUG
             Serial.println(dataString);
             #endif
@@ -109,8 +117,9 @@ void Srv_read_uart_data(void)
 }
 /***********************************************************
 void Srv_AdjustDateEveryDay()
-
 ajuste la RTC avec l'heure de linino.
+si heure deja ajusté on check toutes les 50minutes
+sinon on retente toute les 2 minutes
 ************************************************************/
 void Srv_AdjustDateEveryDay(void)
 {
@@ -180,11 +189,18 @@ uint8_t Srv_PingGoogle(void)
     
     if(check_internet == 0)
     {      
+      Event.Ntp_To_Rtc_Update = 0;
+      if(Event.RTC_To_Linino_Update == 0)
+      {
+        rtc_to_linino_date_update();
+        Event.RTC_To_Linino_Update = 1;
+      }
+      
       #ifdef DEBUG
       Serial.println(F("No internet connexion !"));
       PrintRtcDate();
-      #endif
-      Event.Ntp_To_Rtc_Update = 0;
+      PrintLininoDate();
+      #endif      
     }
     else if(check_internet == 1)
     {

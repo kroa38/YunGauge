@@ -25,8 +25,8 @@ extern  Struct_Atmega_Int S_Interrupt_Atmega;
 extern  Struct_Srv_Event S_Srv_Event;
 extern  Struct_Twi_Error_Flag S_Twi_Error_Flag;
 
-Int32U Index_HP_Test=4000000;     
-Int32U Index_HC_Test=3000000;     
+Int32U Index_HP_Test=1500000;     
+Int32U Index_HC_Test=1200000;     
 
 /**********************************************************************************************************************
 *                                                                                                                     *

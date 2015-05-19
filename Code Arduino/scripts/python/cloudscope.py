@@ -46,10 +46,6 @@ from apiclient import errors
 from email.mime.text import MIMEText
 
 
-
-# --------------------------------------------------------------------------------------------------
-
-
 def oauth2_build(scope):
     """  query oauth2 to google
     :itype : string (scope name)
@@ -85,8 +81,6 @@ def oauth2_build(scope):
             log_error("Oauth Spreadsheet error")
             # print 'Authorisation failure'
 
-# --------------------------------------------------------------------------------------------------
-
 
 def drive_insert_file(file_name, folder_id):
     """  envoie un fichier à google drive
@@ -120,7 +114,7 @@ def drive_insert_file(file_name, folder_id):
     else:
         log_error("file %s doesn't exist in function : drive_insert_file() : " % file_name)
         exit()
-# --------------------------------------------------------------------------------------------------
+
 
 
 def drive_delete_file(file_id):
@@ -139,8 +133,6 @@ def drive_delete_file(file_id):
         error = error['error']['message']
         log_error("HttpError in function : drive_delete_file() : " + error)
         exit()
-
-# --------------------------------------------------------------------------------------------------
 
 
 def print_files_in_folder(folder_id):
@@ -172,8 +164,6 @@ def print_files_in_folder(folder_id):
             log_error("HttpError in function : print_files_in_folder() : " + error)
             break
     exit()
-# --------------------------------------------------------------------------------------------------
-
 
 def gmaillistmessage():
     """  liste les messages de la boite mail
@@ -191,8 +181,6 @@ def gmaillistmessage():
         error = error['error']['message']
         log_error("HttpError in function  : gmaillistmessage() : " + error)
         exit()
-# --------------------------------------------------------------------------------------------------
-
 
 def gmailsendmessage(message):
     """  envoie le message par email
@@ -212,8 +200,6 @@ def gmailsendmessage(message):
         error = error['error']['message']
         log_error("HttpError in function : gmailsendmessage()" + error)
         exit()
-# --------------------------------------------------------------------------------------------------
-
 
 def gmailcreatemessage(message_text):
     """  creation du message à envoyer pour email
@@ -230,7 +216,6 @@ def gmailcreatemessage(message_text):
     message['subject'] = "Yuno info"
     return {'raw': base64.b64encode(message.as_string())}
 
-# --------------------------------------------------------------------------------------------------
 
 
 def get_json_data_from_file(file_name):
@@ -247,7 +232,6 @@ def get_json_data_from_file(file_name):
         python_data = json.loads(json_data)
         return python_data
 
-# --------------------------------------------------------------------------------------------------
 
 
 def check_internet():
@@ -267,7 +251,6 @@ def check_internet():
         log_event("Internet is Down !")
         return "0"
 
-# --------------------------------------------------------------------------------------------------
 
 def get_ip_adress():
     """"
@@ -281,7 +264,6 @@ def get_ip_adress():
     log_event(ip_string)
     return ip_string
 
-# --------------------------------------------------------------------------------------------------
 
 def email_ip_addr():
     """"
@@ -292,8 +274,6 @@ def email_ip_addr():
 
     gmailsendmessage(get_ip_adress())
 
-
-# --------------------------------------------------------------------------------------------------
 
 
 def log_error(error_message):
@@ -308,8 +288,6 @@ def log_error(error_message):
     f = open(logfile, "a")
     f.write(now + "    " + error_message + "\r\n")
     f.close()
-# --------------------------------------------------------------------------------------------------
-
 
 def log_event(event_message):
     """ log to the file event.log the current event with the date
@@ -323,10 +301,6 @@ def log_event(event_message):
     f = open(logfile, "a")
     f.write(now + "    " + event_message + "\r\n")
     f.close()
-
-
-
-# --------------------------------------------------------------------------------------------------
 
 
 

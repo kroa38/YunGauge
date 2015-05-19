@@ -39,7 +39,7 @@ def main(str_arg):
         print "0"
         log_error("Bad argument passed to config.py")
         exit()
-# --------------------------------------------------------------------------------------------------
+
 
 if __name__ == '__main__':
 

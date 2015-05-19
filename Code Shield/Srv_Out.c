@@ -308,13 +308,15 @@ void Srv_Out_Event_Send_Teleinfo_to_Arduino(void)
           {
             OutputBuffer[i]=0;
           }
+          Drv_Uart0_Shift_Tab(ptr_hchp);                // elimine les zero d'entête
+          Drv_Uart0_Shift_Tab(ptr_hchc);                // elimine les zero d'entête
           
           strcpy(OutputBuffer,(ptr_hchp+5));            // ajout de la valeur HP ex 001524512 (9 caractères)
           strcat(OutputBuffer,",");                     // ajout virgule de séparation des champs CSV.
           strcat(OutputBuffer,(ptr_hchc+5));            // ajout on renvoi uniquement la valeur HC ex 007524415 (9 caractères)
-          strcat(OutputBuffer,",");                     // ajout virgule de séparation des champs CSV. 
+          strcat(OutputBuffer,",\"");                   // ajout virgule de séparation des champs CSV. 
           strcat(OutputBuffer,(ptr_ptec+5));            // ajout on renvoi uniquement HP ou HC (2 caractères)
-          strcat(OutputBuffer,",");                     // ajout virgule de séparation des champs CSV.
+          strcat(OutputBuffer,"\",");                   // ajout virgule de séparation des champs CSV.
           
           for ( Int8U i=0; i<OUTPUT_BUFFER_SIZE; i++ )           // calcul CRC
             {
@@ -498,10 +500,13 @@ void teststring(void)
   Drv_Uart0_Int32_To_Ascii(Index_HP_Test,tabhp);
   Drv_Uart0_Int32_To_Ascii(Index_HC_Test,tabhc);
   
+  Drv_Uart0_Shift_Tab(tabhp);                // elimine les zero d'entête
+  Drv_Uart0_Shift_Tab(tabhc);                // elimine les zero d'entête
+  
   strcpy(OutputBuffer,tabhp);            // ajout de la valeur HP ex 001524512 (9 caractères)
   strcat(OutputBuffer,",");              // ajout virgule de séparation des champs CSV.
   strcat(OutputBuffer,tabhc);            // ajout de la valeur HP ex 001524512 (9 caractères)
-  strcat(OutputBuffer,",HP,");           // ajout virgule de séparation des champs CSV. 
+  strcat(OutputBuffer,",\"HP\",");           // ajout virgule de séparation des champs CSV. 
   
   for ( Int8U i=0; i<TEST_STRING_BUFFER; i++ )           // calcul CRC
       {

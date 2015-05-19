@@ -32,7 +32,7 @@ struct Evenements
      unsigned char Ntp_To_RTC_OK        	: 1; 
      unsigned char Uart_data_ready              : 1;
      unsigned char Test_Mode	                : 1;  
-     unsigned char dummy_tree	                : 1;     
+     unsigned char RTC_To_Linino_Update         : 1;     
 };
 
 Evenements Event = {0};
@@ -86,6 +86,7 @@ void GeneralInit(void)
   RTC.writeSqwPinMode(OFF);           // led off de la RTC au demarrage
   I2C_ClearToSend();  
   Event.Ntp_To_RTC_OK =0;             // on n'a pas encore mis à jour l'heure par internet
+  Event.RTC_To_Linino_Update = 0;     // mise a jour de l'heure linino avec l'heure rtc
   WaitForLinino();                    // on attend que Linino soit demarré (~ 50 secondes)
  
     
@@ -237,15 +238,15 @@ void PrintRtcDate(void)
 
 }
 /***********************************************************
-void *getdate()
+void *get_rtc_date()
 
 renvoie la date au format ISO8601 ou CUSTOM
 dans le tableau date_array.
-calcul de l'heure d'été 
+calcul de l'heure d'été possible
 in : format
 out : pointeur vers date_array (variable globale)
 ************************************************************/
-char *getdate(char format)
+char *get_rtc_date(char format)
 {
   
   for(char i=0;i<DATE_STRING_SIZE;i++)
@@ -255,28 +256,7 @@ char *getdate(char format)
     
   I2C_RequestToSend();
   DateTime now = RTC.now();
-  //calcul now DST time
-  uint8_t nowmonth = now.month();
-  uint8_t nowday = now.day();
-  uint8_t nowdow = now.dayOfWeek();
-  uint8_t isdst=0;
-  
-  //////////////////////////////////////////////  
-  // calcul si on est en heure d'été ou d'hiver  
-  //////////////////////////////////////////////
-  if (nowmonth < 3 || nowmonth > 10)  isdst= 0U; 
-  else if (nowmonth > 3 && nowmonth < 10)  isdst= 1U;
-  else if (nowmonth == 3) 
-  { 
-    int previousSunday = nowday - nowdow;
-    isdst= (previousSunday >= 25);
-  }
-  else if (nowmonth == 10)
-  {
-   int previousSunday = nowday - nowdow;
-   isdst = (previousSunday < 25);
-  }
-  //////////////////////////////////////////////
+
   
   if(format==DATE_ISO8601)
   {
@@ -286,15 +266,11 @@ char *getdate(char format)
     str += '-';
     str += String(now.day(), DEC);  
     str += 'T';  
-    if(isdst==0) str += String(now.hour()-1U, DEC); 
-    else if(isdst==1) str += String(now.hour()-2U, DEC);
+    str += String(now.hour(), DEC); 
     str += ':';
     str += String(now.minute(), DEC);
     str += ':'; 
     str += String(now.second(), DEC); 
-    
-    if(isdst==0) str += String("+01:00");
-    else if(isdst==1) str += String("+02:00");
     
     str.toCharArray(date_array,25);
   }
@@ -343,8 +319,8 @@ void PrintLininoDate(void)
 
     Serial.print(F("Linino Date: "));
     Serial.println(DateL);
-    Serial.print("  ");    
-    Serial.println(TimeL);
+    //Serial.print("  ");    
+    //Serial.println(TimeL);
     #endif
 }
 /***********************************************************
@@ -483,8 +459,8 @@ char  *epochinTime(unsigned long millisAtEpoch)
   String strb(buf);
   stra +=strb;
 
-  String fmt = "+\"%Y-%m-%d %T %z\"";
-  
+  //String fmt = "+\"%Y-%m-%dT%T%z\"";
+  String fmt = "+\"%Y-%m-%dT%T\"";
   Process time;   
   time.begin("date");
   time.addParameter("-d");
@@ -498,10 +474,10 @@ char  *epochinTime(unsigned long millisAtEpoch)
     if ( (c != '"') && (c != 0x0A) && (c != 0x0D ))
       epochCharArray[i++] = c;
   }
-  
+  /*
       for(int i=0;i<50;i++)
      {
-      if (epochCharArray[i] == 0x20)
+      if (epochCharArray[i] == 0x20)   // recherche du premier espace avant T
         {
         epochCharArray[i] = 'T';
         break;
@@ -521,16 +497,16 @@ char  *epochinTime(unsigned long millisAtEpoch)
         epochCharArray[i+6] = 0;
         break;
         }
-      }      
+      }  
+  */    
   return epochCharArray;
   
 }
 /***********************************************************
 unsigned long timeInEpoch(void)
 Return timestamp of Linino
-
 in : none
-out :unsigned long
+out :unsigned long  (ex 1432023044)
 ************************************************************/
 unsigned long timeInEpoch(void)
 {
@@ -550,4 +526,87 @@ unsigned long timeInEpoch(void)
   // Return long with timestamp
   return atol(epochCharArray);
 }
+/***********************************************************
+void rtc_to_linino_date_update(void)
+Update the Linino date with the rtc date only if rtc date
+is superior to 2015-5-10 8:00:00
+in : none
+out : none
+************************************************************/
+void rtc_to_linino_date_update(void)
+{  
+    Process time;                   // process to run on Linuino
+    
+    I2C_RequestToSend();
+    DateTime now = RTC.now();
+    I2C_ClearToSend(); 
+    
+    unsigned long rtc_epoch = now.unixtime();
+    unsigned long linino_epoch = 0UL;
+    String DateLinino = "";
+    DateLinino = ProcExec(F("date"),F("+%s"));
+    linino_epoch = DateL.toInt();
+    
+    if (rtc_epoch > 1431244800UL)      // 2015-5-10 8:00:00
+    {      
+     
+      if(Is_DST_Time()) 
+      {
+        rtc_epoch -= 7200;    // substract 2 hours
+      }
+      else
+      {
+        rtc_epoch -= 3600;    // substract 1 hour
+      }  
+      
+      String str = "@" + String(rtc_epoch, DEC);
+      // Set UNIX timestamp
 
+      time.begin("date");
+      time.addParameter("-s");
+      time.addParameter(str);
+      
+      time.run();  
+      //while (time.available() > 0); 
+      #ifdef DEBUG
+      Serial.println(F("Linino Date Updated with RTC"));
+      #endif
+    }  
+}
+/***********************************************************
+uint8_t Is_DST_Time(void)
+Calculate DST ( 1 = YES ,  0 = NO ) from the RTC 
+in : none
+out : uint8_t
+************************************************************/
+uint8_t Is_DST_Time(void)
+{
+  I2C_RequestToSend();
+  DateTime now = RTC.now();
+  I2C_ClearToSend();
+  
+  //calcul now DST time
+  uint8_t nowmonth = now.month();
+  uint8_t nowday = now.day();
+  uint8_t nowdow = now.dayOfWeek();
+  uint8_t isdst=0;
+  
+  //////////////////////////////////////////////  
+  // calcul si on est en heure d'été ou d'hiver  
+  //////////////////////////////////////////////
+
+  if (nowmonth < 3 || nowmonth > 10)  isdst= 0U; 
+  else if (nowmonth > 3 && nowmonth < 10)  isdst= 1U;
+  else if (nowmonth == 3) 
+  { 
+    int previousSunday = nowday - nowdow;
+    isdst= (previousSunday >= 25);
+  }
+  else if (nowmonth == 10)
+  {
+   int previousSunday = nowday - nowdow;
+   isdst = (previousSunday < 25);
+  }
+
+  return isdst;
+}

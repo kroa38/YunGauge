@@ -23,17 +23,22 @@ import warnings		    # Used for the warning InsecurePlatformWarning in python 2.
 import plotly
 import plotly.plotly as py
 import plotly.tools as tls
+import sqlite3 as lite
+import calendar
 from plotly.graph_objs import *
 from cloudscope import log_error
 from cloudscope import log_event
 from cloudscope import oauth2_build
+from datetime import datetime
+from time import gmtime, localtime,  strftime
 
 DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive '
 GMAIL_SCOPE = 'https://mail.google.com/'
 SHEET_SCOPE = 'https://spreadsheets.google.com/feeds'
 
-# --------------------------------------------------------------------------------------------------
-
+index_hp = 1451244
+index_hc = 1324002
+epochdate = 1008034500
 
 def get_index():
     """ return the index read in the file indexfile.csv
@@ -53,8 +58,6 @@ def get_index():
         ifile.write("0")
         ifile.close()
 
-# --------------------------------------------------------------------------------------------------
-
 
 def put_index(index):
     """ log to the file error.log the current error with the date
@@ -64,7 +67,7 @@ def put_index(index):
     ifile = open('indexfile.csv', "w")
     ifile.write(str(index))
     ifile.close()
-# --------------------------------------------------------------------------------------------------
+
 
 def worksheet():
 
@@ -79,7 +82,7 @@ def worksheet():
     # val = wks.cell(1,2).value
     # print val
 
-# --------------------------------------------------------------------------------------------------
+
 def printrowcvs():
 
     ifile = open('csvfile.csv', "r")
@@ -92,8 +95,9 @@ def printrowcvs():
         ligne += 1
     put_index(ligne)
     ifile.close()
-# --------------------------------------------------------------------------------------------------
-def  cvs_to_json():
+
+
+def cvs_to_json():
     """ read a cvs file and write it to a json file
     :itype : integer
     :rtype : None
@@ -107,7 +111,7 @@ def  cvs_to_json():
         json.dump(row, jsonfile,indent=4)
         jsonfile.write(',\n')
     jsonfile.write('\b]\n')
-# --------------------------------------------------------------------------------------------------
+
 
 def plotly_test():
     """ Plotly test
@@ -128,19 +132,113 @@ def plotly_test():
 
     unique_url = py.plot(data, filename='basic-line')
 
-# --------------------------------------------------------------------------------------------------
+
+def epoch_to_iso8601(epochtime):
+    """
+    convert the unix epoch time into a iso8601 formatted date
+    epoch_to_iso8601(1341866722) return   '2012-07-09T22:45:22'
+    In : Int
+    Out : String
+    """
+    return datetime.fromtimestamp(epochtime).isoformat()
+
+
+def iso8601_to_epoch(datestring):
+    """
+    iso8601_to_epoch - convert the iso8601 date into the unix epoch time
+    In : String
+    Out :
+    """
+    return calendar.timegm(datetime.strptime(datestring, "%Y-%m-%dT%H:%M:%S.%f").timetuple())
+
+def epoch_to_hour(epochtime):
+    """
+    return the hour from epoch time
+    in : Int
+    Out Int
+    """
+    return int(strftime("%H", localtime(epochtime)))
+
+
+def epoch_to_minute(epochtime):
+    """
+    return the minutes from epoch time
+    in : Int
+    Out Int
+    """
+    return int(strftime("%M", localtime(epochtime)))
+
+
+def epoch_to_day(epochtime):
+    """
+    return the day of week from epoch time
+    ex : 1431959458 return : Monday
+    in : Int
+    Out String
+    """
+    return datetime.fromtimestamp(epochtime).strftime("%A")
+
+
+def teststring():
+    """
+    For test only this method return a list  like [1256234,1546879,"HP","2012-07-09T22:45:22"]
+    the global variable a defined at the beginning of the file
+    in : void
+    Out list  [Int, Int, String, String]
+    """
+    global index_hc
+    global index_hp
+    global epochdate
+    epochdate += 900   # 900 = 15 minutes = 15*60
+
+    heureminute = epoch_to_iso8601(epochdate)
+    heures = int(epoch_to_hour(epochdate))
+    minutes = int(epoch_to_minute(epochdate))
+
+    mode = "HP"
+
+    if (heures*60+minutes > 15*60+38) and (heures*60+minutes < 17*60+38):  # check between 15h38 and 17h38
+        mode = "HC"
+    if (heures*60+minutes > 21*60+8) and (heures*60+minutes < 23*60+59):   # check between 21h08 and 23h59
+        mode = "HC"
+    if (heures*60+minutes > 0) and (heures*60+minutes < 3*60+8):           # check between 00h00 and 03h08
+        mode = "HC"
+
+    if mode == "HP":
+        index_hp += 1       # increment HP during HP time
+    if mode == "HC":
+        index_hc += 1       # increment HC during HC time
+
+    liste1 = [index_hp, index_hc, mode, heureminute]
+
+    return liste1
+
+
+def testdb():
+
+    con = None
+
+    try:
+        con = lite.connect('test.db')
+
+        cur = con.cursor()
+        cur.execute('SELECT SQLITE_VERSION()')
+
+        data = cur.fetchone()
+
+        print "SQLite version: %s" % data
+
+    except lite.Error, e:
+
+        print "Error %s:" % e.args[0]
+        sys.exit(1)
+
+    finally:
+
+        if con:
+            con.close()
+
 
 if __name__ == '__main__':
-    """ main function
-    :itype :
-    :rtype : None
-    """
-    #total = len(sys.argv)
-	
-    #plotly_test()
-    # worksheet()
-    # cvs_to_json()
-    #plotlytest()
-    #json_data = open("file.json").read()
-    #python_data = json.loads(json_data)
-    #print python_data[0]["INDEX_HP"]
+
+    print(iso8601_to_epoch("1008034500"))
