@@ -75,7 +75,7 @@ void Srv_read_uart_data(void)
             if(Event.Test_Mode)
             {
               dataString += '"';
-              dataString += epochinTime(epochunix);
+              dataString += epoch_to_iso8601(epochunix);
               dataString += '"';
               epochunix += EPOCH_INCREMENT;
             }
@@ -85,6 +85,7 @@ void Srv_read_uart_data(void)
               dataString += get_rtc_date(DATE_ISO8601);
               dataString += '"';
             }
+            // construct a python list....
             String OutputString = "[";
             OutputString += dataString;
             OutputString += "]";
@@ -189,13 +190,7 @@ uint8_t Srv_PingGoogle(void)
     
     if(check_internet == 0)
     {      
-      Event.Ntp_To_Rtc_Update = 0;
-      if(Event.RTC_To_Linino_Update == 0)
-      {
-        rtc_to_linino_date_update();
-        Event.RTC_To_Linino_Update = 1;
-      }
-      
+      Event.Ntp_To_Rtc_Update = 0;   
       #ifdef DEBUG
       Serial.println(F("No internet connexion !"));
       PrintRtcDate();
@@ -204,10 +199,10 @@ uint8_t Srv_PingGoogle(void)
     }
     else if(check_internet == 1)
     {
+      Event.Ntp_To_Rtc_Update = 1;
       #ifdef DEBUG
       Serial.println(F("Internet is UP"));     
       #endif
-      Event.Ntp_To_Rtc_Update = 1;
     }
     return check_internet;
   }

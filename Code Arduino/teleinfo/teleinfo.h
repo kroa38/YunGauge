@@ -43,7 +43,7 @@ void PrintLininoDate(void);
 void WaitForLinino(void);
 void Is_Uart_Data(void);
 void SyncLininoClock(void);
-char  *epochinTime(unsigned long millisAtEpoch);
+char  *epoch_to_iso8601(unsigned long millisAtEpoch);
 unsigned long timeInEpoch(void);
 uint8_t Is_DST_Time(void);
 void rtc_to_linino_date_update(void);

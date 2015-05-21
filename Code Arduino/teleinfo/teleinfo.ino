@@ -258,7 +258,7 @@ char *get_rtc_date(char format)
   DateTime now = RTC.now();
 
   
-  if(format==DATE_ISO8601)
+  if(format==DATE_ISO8601)  //ex : 2012-07-09T22:27:50
   {
     String str = String(now.year(), DEC); 
     str += '-';
@@ -393,8 +393,10 @@ void WaitForLinino(void)
     #endif
     
     I2C_RequestToSend();
-    RTC.writeSqwPinMode(SquareWave1HZ);	                       // clignotement de la led toutes les secondes
+    RTC.writeSqwPinMode(SquareWave1HZ);	 // clignotement de la led toutes les secondes
     I2C_ClearToSend();
+    
+    rtc_to_linino_date_update();        // update Linino Date from RTC
     
     digitalWrite(BUSYPIN, LOW);        // BUSY = 0 la carte Shield peut demarrer.
     
@@ -417,7 +419,6 @@ void Is_Uart_Data(void)
     if(tmp_nvram)
      {
       Event.Uart_data_ready=1;
-      //Serial.println(F("Data UART available..."));  
      }
 }
 
@@ -440,17 +441,17 @@ void SyncLininoClock(void)
 }
 
 /***********************************************************
-char  *epochinTime(unsigned long millisAtEpoch)
+char  *epoch_to_iso8601(unsigned long millisAtEpoch)
 
 Return a string date format
-example:  date -d @1430665070 +"%d-%m-%Y %T %z"
-return : 03-05-2015 16:57:50 +0200
+example:  date -d @1430665070 +"%d-%m-%YT%T"
+return : 03-05-2015T16:57:50
 in : uint long : epoch unix time
 out : char * (pointer to string)
 ************************************************************/
-char  *epochinTime(unsigned long millisAtEpoch) 
+char  *epoch_to_iso8601(unsigned long millisAtEpoch) 
 {
-  char epochCharArray[50] = "";
+  char epochCharArray[25] = "";
   char buf[12];
   char i=0;
   ltoa(millisAtEpoch,buf,10);
@@ -459,7 +460,6 @@ char  *epochinTime(unsigned long millisAtEpoch)
   String strb(buf);
   stra +=strb;
 
-  //String fmt = "+\"%Y-%m-%dT%T%z\"";
   String fmt = "+\"%Y-%m-%dT%T\"";
   Process time;   
   time.begin("date");
@@ -474,31 +474,7 @@ char  *epochinTime(unsigned long millisAtEpoch)
     if ( (c != '"') && (c != 0x0A) && (c != 0x0D ))
       epochCharArray[i++] = c;
   }
-  /*
-      for(int i=0;i<50;i++)
-     {
-      if (epochCharArray[i] == 0x20)   // recherche du premier espace avant T
-        {
-        epochCharArray[i] = 'T';
-        break;
-        }
-      }
-      
-      for(int i=0;i<50;i++)
-     {
-      if (epochCharArray[i] == 0x20)
-        {
-        epochCharArray[i] = epochCharArray[i+1];
-        epochCharArray[i+1] = epochCharArray[i+2];
-        epochCharArray[i+2] = epochCharArray[i+3];
-        epochCharArray[i+3] = ':';
-        epochCharArray[i+4] = '0';
-        epochCharArray[i+5] = '0';
-        epochCharArray[i+6] = 0;
-        break;
-        }
-      }  
-  */    
+  
   return epochCharArray;
   
 }
@@ -528,8 +504,9 @@ unsigned long timeInEpoch(void)
 }
 /***********************************************************
 void rtc_to_linino_date_update(void)
-Update the Linino date with the rtc date only if rtc date
-is superior to 2015-5-10 8:00:00
+Update the Linino date with the RTC date only if rtc date
+is superior to linino date. This process is executed 1 time
+at  the end of waitforlinino() function
 in : none
 out : none
 ************************************************************/
@@ -540,17 +517,26 @@ void rtc_to_linino_date_update(void)
     I2C_RequestToSend();
     DateTime now = RTC.now();
     I2C_ClearToSend(); 
+    uint8_t isdst=Is_DST_Time();
     
-    unsigned long rtc_epoch = now.unixtime();
+    unsigned long rtc_epoch = now.unixtime();  // retrieve epoch time from RTC
     unsigned long linino_epoch = 0UL;
-    String DateLinino = "";
-    DateLinino = ProcExec(F("date"),F("+%s"));
-    linino_epoch = DateL.toInt();
+    unsigned long linino_tz = 0UL;
+    linino_epoch = ProcExec(F("date"),F("+%s")).toInt();
+    linino_tz = ProcExec(F("date"),F("+%z")).substring(1,3).toInt();  // retrieve time zone
+    linino_epoch += linino_tz*3600;
     
-    if (rtc_epoch > 1431244800UL)      // 2015-5-10 8:00:00
+    #ifdef DEBUG
+    Serial.print("Linino EPOCH : ");
+    Serial.println(linino_epoch);
+    Serial.print("RTC EPOCH : ");
+    Serial.println(rtc_epoch,DEC);
+    #endif
+    
+    if (rtc_epoch > linino_epoch)
     {      
      
-      if(Is_DST_Time()) 
+      if(isdst) 
       {
         rtc_epoch -= 7200;    // substract 2 hours
       }
@@ -567,7 +553,6 @@ void rtc_to_linino_date_update(void)
       time.addParameter(str);
       
       time.run();  
-      //while (time.available() > 0); 
       #ifdef DEBUG
       Serial.println(F("Linino Date Updated with RTC"));
       #endif
