@@ -40,7 +40,7 @@ SHEET_SCOPE = 'https://spreadsheets.google.com/feeds'
 
 index_hp = 1451244
 index_hc = 1324002
-epochdate = 1008044500
+epochdate = 1022214500
 
 
 def get_index():
@@ -169,6 +169,31 @@ def epoch_to_date(epochtime):
     """
     return strftime("%d-%m-%Y", localtime(epochtime))
 
+
+def epoch_to_year(epochtime):
+    """
+    return the year from epoch time
+    in : Int
+    Out Int
+    """
+    return strftime("%Y", localtime(epochtime))
+
+def epoch_to_month(epochtime):
+    """
+    return the year from epoch time
+    in : Int
+    Out Int
+    """
+    return strftime("%m", localtime(epochtime))
+
+def epoch_to_day(epochtime):
+    """
+    return the year from epoch time
+    in : Int
+    Out Int
+    """
+    return strftime("%d", localtime(epochtime))
+
 def epoch_to_hourminute(epochtime):
     """
     return the hour from epoch time
@@ -279,10 +304,14 @@ def testdb_dic_insert(liste):
     nMode = liste[2]
     nTimestamp = liste[3]
     nEpoch = iso8601_to_epoch(nTimestamp)
-    nDay_Name = epoch_to_weekday_name(nEpoch)
-    nDay_Number = epoch_to_weekday_number(nEpoch)
+    nWday_Name = epoch_to_weekday_name(nEpoch)
+    nWday_Number = epoch_to_weekday_number(nEpoch)
     nHour = epoch_to_hourminute(nEpoch)
     nDate = epoch_to_date(nEpoch)
+    nWeek = epoch_to_week_number(nEpoch)
+    nYear = epoch_to_year(nEpoch)
+    nMonth = epoch_to_month(nEpoch)
+    nDay = epoch_to_day(nEpoch)
 
     uTable = 'CurrentWeek'
 
@@ -302,10 +331,10 @@ def testdb_dic_insert(liste):
 
             if count==0:
                 # insert the new data
-                rowsQuery = 'INSERT INTO %s (Day_Name,Day_Number,Date,Hour,Mode,Index_HP,Index_HC,\
+                rowsQuery = 'INSERT INTO %s (Year,Month,Week,WeekDay_Name,Day_Number,Date,Hour,Mode,Index_HP,Index_HC,\
                             Diff_HP,Diff_HC,Diff_HPHC,Cumul_HP,Cumul_HC,Cumul_HPHC)\
-                            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)' % uTable
-                cur.execute(rowsQuery, (nDay_Name,nDay_Number,nDate,nHour,nMode,nhp,nhc,0,0,0,0,0,0))
+                            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)' % uTable
+                cur.execute(rowsQuery, (nYear,nWeek, nWday_Name,nWday_Number,nDate,nHour,nMode,nhp,nhc,0,0,0,0,0,0))
             else:
 
                 # select the last inserted data
@@ -322,10 +351,10 @@ def testdb_dic_insert(liste):
                 nchphc = nchp + nchc
 
                 # insert the new data
-                rowsQuery = 'INSERT INTO %s (Day_Name,Day_Number,Date,Hour,Mode,Index_HP,Index_HC,\
+                rowsQuery = 'INSERT INTO %s (Year,Week,WeekDay_Name,Day_Number,Date,Hour,Mode,Index_HP,Index_HC,\
                             Diff_HP,Diff_HC,Diff_HPHC,Cumul_HP,Cumul_HC,Cumul_HPHC)\
-                            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)' % uTable
-                cur.execute(rowsQuery, (nDay_Name,nDay_Number,nDate,nHour,nMode,nhp,nhc,nthp,nthc,nthphc,nchp,nchc,nchphc))
+                            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)' % uTable
+                cur.execute(rowsQuery, (nYear,nWeek, nWday_Name,nWday_Number,nDate,nHour,nMode,nhp,nhc,nthp,nthc,nthphc,nchp,nchc,nchphc))
 
     except sqlite3.Error, e:
         print "Error %s:" % e.args[0]
@@ -349,7 +378,7 @@ def testdb_insert(liste):
         with conn:
 
             cur = conn.cursor()
-            rowsQuery = 'SELECT Count() FROM %s' % uTable
+            rowsQuery = 'SELECT Count() FROM %s' % nTable
             cur.execute(rowsQuery)
             count = cur.fetchone()[0]
             print " last rowid is %s" % count
@@ -363,8 +392,8 @@ def testdb_insert(liste):
                 print "Data Tuple  from rowid %s = %s" % (count, pdata)
 
 
-            rowsQuery = 'INSERT INTO %s (Year,Week) VALUES(?,?)' % uTable
-            cur.execute(rowsQuery, (uYear1, uWeek))
+            rowsQuery = 'INSERT INTO %s (Year,Week) VALUES(?,?)' % nTable
+            cur.execute(rowsQuery, (2015, 41))
             lid = cur.lastrowid
             print " new rowid is %s" % lid
 
@@ -385,11 +414,12 @@ def create_database():
     # create a table
     with conn:
 
-        cur = conn.cursor()
+        cur = conn.cursor()   Year,
 
         # create a table for the week
         # create a table for the detailed Days
-        cur.execute('CREATE TABLE CurrentWeek( Day_Number INTEGER,Day_Name TEXT,Date TEXT, Hour TEXT, \
+        cur.execute('CREATE TABLE CurrentWeek( Year INTEGER,Year Integer,Week INTEGER,WeekDay_Number INTEGER,\
+                    Day INTEGER, Day_Name TEXT,Date TEXT, Hour TEXT, \
                     Mode TEXT, Index_HP INTEGER, Index_HC INTEGER, \
                     Diff_HP INTEGER, Diff_HC INTEGER, Diff_HPHC INTEGER, \
                     Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER, \
@@ -420,6 +450,6 @@ if __name__ == '__main__':
     #print epoch_to_weekday_name(1432117359)
     create_database()
     #testdb_insert('Week',1023,118)
-    for ligne in range(1, 5):
+    for ligne in range(1, 50):
         nliste = teststring()
         testdb_dic_insert(nliste)
