@@ -161,6 +161,13 @@ def epoch_to_hour(epochtime):
     """
     return int(strftime("%H", localtime(epochtime)))
 
+def epoch_to_date(epochtime):
+    """
+    return the hour from epoch time
+    in : Int
+    Out Int
+    """
+    return strftime("%d-%m-%Y", localtime(epochtime))
 
 def epoch_to_hourminute(epochtime):
     """
@@ -275,6 +282,7 @@ def testdb_dic_insert(liste):
     nDay_Name = epoch_to_weekday_name(nEpoch)
     nDay_Number = epoch_to_weekday_number(nEpoch)
     nHour = epoch_to_hourminute(nEpoch)
+    nDate = epoch_to_date(nEpoch)
 
     uTable = 'CurrentWeek'
 
@@ -294,10 +302,10 @@ def testdb_dic_insert(liste):
 
             if count==0:
                 # insert the new data
-                rowsQuery = 'INSERT INTO %s (Day_Name,Day_Number,Hour,Mode,Index_HP,Index_HC,\
-                            Total_HP,Total_HC,Total_HPHC,Cumul_HP,Cumul_HC,Cumul_HPHC)\
-                            VALUES(?,?,?,?,?,?,?,?,?,?,?,?)' % uTable
-                cur.execute(rowsQuery, (nDay_Name,nDay_Number,nHour,nMode,nhp,nhc,0,0,0,0,0,0))
+                rowsQuery = 'INSERT INTO %s (Day_Name,Day_Number,Date,Hour,Mode,Index_HP,Index_HC,\
+                            Diff_HP,Diff_HC,Diff_HPHC,Cumul_HP,Cumul_HC,Cumul_HPHC)\
+                            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)' % uTable
+                cur.execute(rowsQuery, (nDay_Name,nDay_Number,nDate,nHour,nMode,nhp,nhc,0,0,0,0,0,0))
             else:
 
                 # select the last inserted data
@@ -314,10 +322,10 @@ def testdb_dic_insert(liste):
                 nchphc = nchp + nchc
 
                 # insert the new data
-                rowsQuery = 'INSERT INTO %s (Day_Name,Day_Number,Hour,Mode,Index_HP,Index_HC,\
-                            Total_HP,Total_HC,Total_HPHC,Cumul_HP,Cumul_HC,Cumul_HPHC)\
-                            VALUES(?,?,?,?,?,?,?,?,?,?,?,?)' % uTable
-                cur.execute(rowsQuery, (nDay_Name,nDay_Number,nHour,nMode,nhp,nhc,nthp,nthc,nthphc,nchp,nchc,nchphc))
+                rowsQuery = 'INSERT INTO %s (Day_Name,Day_Number,Date,Hour,Mode,Index_HP,Index_HC,\
+                            Diff_HP,Diff_HC,Diff_HPHC,Cumul_HP,Cumul_HC,Cumul_HPHC)\
+                            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)' % uTable
+                cur.execute(rowsQuery, (nDay_Name,nDay_Number,nDate,nHour,nMode,nhp,nhc,nthp,nthc,nthphc,nchp,nchc,nchphc))
 
     except sqlite3.Error, e:
         print "Error %s:" % e.args[0]
@@ -330,6 +338,7 @@ def testdb_insert(liste):
     nTimestamp = liste[3]
     nEpoch = iso8601_to_epoch(nTimestamp)
     nDay_Name = epoch_to_weekday_name(nEpoch)
+    nDate = epoch_to_date(nEpoch)
     nDay_Number = epoch_to_weekday_number(nEpoch)
     nHour = epoch_to_hourminute(nEpoch)
     nTable = 'CurrentWeek'
@@ -380,27 +389,27 @@ def create_database():
 
         # create a table for the week
         # create a table for the detailed Days
-        cur.execute('CREATE TABLE CurrentWeek(Day_Name TEXT, Day_Number INTEGER, Hour TEXT, \
+        cur.execute('CREATE TABLE CurrentWeek( Day_Number INTEGER,Day_Name TEXT,Date TEXT, Hour TEXT, \
                     Mode TEXT, Index_HP INTEGER, Index_HC INTEGER, \
-                    Total_HP INTEGER, Total_HC INTEGER, Total_HPHC INTEGER, \
+                    Diff_HP INTEGER, Diff_HC INTEGER, Diff_HPHC INTEGER, \
                     Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER, \
                     Dummy1 INTEGER, Dummy2 INTEGER );')
 
         cur.execute('CREATE TABLE Week(Year INTEGER, Week INTEGER, \
                     Index_HP INTEGER, Index_HC INTEGER, \
-                    Total_HP INTEGER, Total_HC INTEGER, Total_HPHC INTEGER, \
+                    Diff_HP INTEGER, Diff_HC INTEGER, Diff_HPHC INTEGER, \
                     Dummy1 INTEGER, Dummy2 INTEGER);')
 
         # create a table for the Month
         cur.execute('CREATE TABLE Month(Year INTEGER, Month INTEGER, Month_Name TEXT,\
                     Index_HP INTEGER, Index_HC INTEGER, \
-                    Total_HP INTEGER, Total_HC INTEGER, Total_HPHC INTEGER, \
+                    Diff_HP INTEGER, Diff_HC INTEGER, Diff_HPHC INTEGER, \
                     Dummy1 INTEGER, Dummy2 INTEGER);')
 
         # create a table for the Days
         cur.execute('CREATE TABLE Year(Year INTEGER, Month INTEGER, Day INTEGER, \
                     Index_HP INTEGER, Index_HC INTEGER, \
-                    Total_HP INTEGER, Total_HC INTEGER, Total_HPHC INTEGER, \
+                    Diff_HP INTEGER, Diff_HC INTEGER, Diff_HPHC INTEGER, \
                     Dummy1 INTEGER, Dummy2 INTEGER);')
 
 
@@ -411,6 +420,6 @@ if __name__ == '__main__':
     #print epoch_to_weekday_name(1432117359)
     create_database()
     #testdb_insert('Week',1023,118)
-    for ligne in range(1, 200):
+    for ligne in range(1, 5):
         nliste = teststring()
         testdb_dic_insert(nliste)
