@@ -26,7 +26,7 @@ import plotly.plotly as py
 import plotly.tools as tls
 import sqlite3
 import calendar
-import os.path          # lib pour test fichiers
+import os.path  # lib pour test fichiers
 from plotly.graph_objs import *
 from cloudscope import log_error
 from cloudscope import log_event
@@ -161,6 +161,7 @@ def epoch_to_hour(epochtime):
     """
     return int(strftime("%H", localtime(epochtime)))
 
+
 def epoch_to_date(epochtime):
     """
     return the hour from epoch time
@@ -178,6 +179,7 @@ def epoch_to_year(epochtime):
     """
     return strftime("%Y", localtime(epochtime))
 
+
 def epoch_to_month(epochtime):
     """
     return the year from epoch time
@@ -185,6 +187,7 @@ def epoch_to_month(epochtime):
     Out Int
     """
     return strftime("%m", localtime(epochtime))
+
 
 def epoch_to_day(epochtime):
     """
@@ -194,6 +197,7 @@ def epoch_to_day(epochtime):
     """
     return strftime("%d", localtime(epochtime))
 
+
 def epoch_to_hourminute(epochtime):
     """
     return the hour from epoch time
@@ -201,6 +205,7 @@ def epoch_to_hourminute(epochtime):
     Out string
     """
     return strftime("%H:%M", localtime(epochtime))
+
 
 def epoch_to_minute(epochtime):
     """
@@ -220,19 +225,19 @@ def epoch_to_weekday_name(epochtime):
     """
     wdn = epoch_to_weekday_number(epochtime)
 
-    if wdn==1:
+    if wdn == 1:
         return 'lundi'
-    if wdn==2:
+    if wdn == 2:
         return 'mardi'
-    if wdn==3:
+    if wdn == 3:
         return 'mercredi'
-    if wdn==4:
+    if wdn == 4:
         return 'jeudi'
-    if wdn==5:
+    if wdn == 5:
         return 'vendredi'
-    if wdn==6:
+    if wdn == 6:
         return 'samedi'
-    if wdn==7:
+    if wdn == 7:
         return 'dimanche'
 
 
@@ -258,9 +263,10 @@ def epoch_to_weekday_number(epochtime):
     """
     dayt = None
     dayt = int(datetime.fromtimestamp(epochtime).strftime("%w"))
-    if (dayt == 0):
+    if dayt == 0:
         dayt = 7
     return dayt
+
 
 def teststring():
     """
@@ -272,7 +278,7 @@ def teststring():
     global index_hc
     global index_hp
     global epochdate
-    epochdate += 3600
+    epochdate += 3627
 
     datetime_iso8601 = epoch_to_iso8601(epochdate)
     heures = int(epoch_to_hour(epochdate))
@@ -288,7 +294,7 @@ def teststring():
         mode = "HC"
 
     if mode == "HP":
-        index_hp += abs(random.randint(1, 100)) # increment HP during HP time
+        index_hp += abs(random.randint(1, 100))  # increment HP during HP time
     if mode == "HC":
         index_hc += abs(random.randint(1, 100))  # increment HC during HC time
 
@@ -297,70 +303,7 @@ def teststring():
 
     return liste1
 
-def testdb_dic_insert(liste):
-
-    nhp = liste[0]
-    nhc = liste[1]
-    nMode = liste[2]
-    nTimestamp = liste[3]
-    nEpoch = iso8601_to_epoch(nTimestamp)
-    nWday_Name = epoch_to_weekday_name(nEpoch)
-    nWday_Number = epoch_to_weekday_number(nEpoch)
-    nHour = epoch_to_hourminute(nEpoch)
-    nDate = epoch_to_date(nEpoch)
-    nWeek = epoch_to_week_number(nEpoch)
-    nYear = epoch_to_year(nEpoch)
-    nMonth = epoch_to_month(nEpoch)
-    nDay = epoch_to_day(nEpoch)
-
-    uTable = 'CurrentWeek'
-
-
-    try:
-        conn = sqlite3.connect('mydatabase.db')
-
-        with conn:
-            # connect in dictionary mode
-            conn.row_factory = sqlite3.Row
-            cur = conn.cursor()
-
-            # count number of row already inserted
-            rowsQuery = 'SELECT Count() FROM %s' % uTable
-            cur.execute(rowsQuery)
-            count = cur.fetchone()[0]
-
-            if count==0:
-                # insert the new data
-                rowsQuery = 'INSERT INTO %s (Year,Month,Week,WeekDay_Name,Day_Number,Date,Hour,Mode,Index_HP,Index_HC,\
-                            Diff_HP,Diff_HC,Diff_HPHC,Cumul_HP,Cumul_HC,Cumul_HPHC)\
-                            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)' % uTable
-                cur.execute(rowsQuery, (nYear,nWeek, nWday_Name,nWday_Number,nDate,nHour,nMode,nhp,nhc,0,0,0,0,0,0))
-            else:
-
-                # select the last inserted data
-                rowsQuery = 'SELECT * FROM %s WHERE rowid = %s'% (uTable,count)
-                cur.execute(rowsQuery)
-                ldata = cur.fetchone()
-
-                # calculate the differencies
-                nthp = nhp- ldata["Index_HP"]
-                nthc = nhc - ldata["Index_HC"]
-                nthphc = nthp + nthc
-                nchp = ldata["Cumul_HP"] + nthp
-                nchc = ldata["Cumul_HC"] + nthc
-                nchphc = nchp + nchc
-
-                # insert the new data
-                rowsQuery = 'INSERT INTO %s (Year,Week,WeekDay_Name,Day_Number,Date,Hour,Mode,Index_HP,Index_HC,\
-                            Diff_HP,Diff_HC,Diff_HPHC,Cumul_HP,Cumul_HC,Cumul_HPHC)\
-                            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)' % uTable
-                cur.execute(rowsQuery, (nYear,nWeek, nWday_Name,nWday_Number,nDate,nHour,nMode,nhp,nhc,nthp,nthc,nthphc,nchp,nchc,nchphc))
-
-    except sqlite3.Error, e:
-        print "Error %s:" % e.args[0]
-
 def testdb_insert(liste):
-
     nhp = liste[0]
     nhc = liste[1]
     nMode = liste[2]
@@ -384,13 +327,12 @@ def testdb_insert(liste):
             print " last rowid is %s" % count
 
             if count != 0:
-                rowsQuery = 'SELECT * FROM Week WHERE rowid = %s'% count
+                rowsQuery = 'SELECT * FROM Week WHERE rowid = %s' % count
                 cur.execute(rowsQuery)
                 pdata = cur.fetchone()
                 php = pdata[3]
                 phc = pdata[4]
                 print "Data Tuple  from rowid %s = %s" % (count, pdata)
-
 
             rowsQuery = 'INSERT INTO %s (Year,Week) VALUES(?,?)' % nTable
             cur.execute(rowsQuery, (2015, 41))
@@ -399,6 +341,78 @@ def testdb_insert(liste):
 
     except sqlite3.Error, e:
         print "Error %s:" % e.args[0]
+def testdb_dic_insert(liste):
+
+    nhp = liste[0]
+    nhc = liste[1]
+    nmode = liste[2]
+    ntimestamp = liste[3]
+    nepoch = iso8601_to_epoch(ntimestamp)
+    ndayna = epoch_to_weekday_name(nepoch)
+    nwdaynu = epoch_to_weekday_number(nepoch)
+    nhour = epoch_to_hourminute(nepoch)
+    ndate = epoch_to_date(nepoch)
+    nweekn = epoch_to_week_number(nepoch)
+    nyear = epoch_to_year(nepoch)
+    nmonth = epoch_to_month(nepoch)
+    nday = epoch_to_day(nepoch)
+
+
+
+    try:
+        conn = sqlite3.connect('mydatabase.db')
+
+        with conn:
+            # connect in dictionary mode
+            conn.row_factory = sqlite3.Row
+            cur = conn.cursor()
+
+            # count number of row already inserted
+            cur.execute('SELECT Count() FROM %s' % 'CurrentWeek')
+            count = cur.fetchone()[0]
+
+            SQLQuery = 'INSERT INTO CurrentWeek (Year,Month,Day,Week_Number,WeekDay_Number,Day_Name,Date,Hour,\
+                        Mode, Index_HP, Index_HC, Diff_HP, Diff_HC, Diff_HPHC,\
+                        Cumul_HP, Cumul_HC, Cumul_HPHC)\
+                        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
+
+            if count != 0:
+
+                # select the last inserted data
+                cur.execute('SELECT * FROM CurrentWeek WHERE rowid = %s' % count)
+                ldata = cur.fetchone()
+
+                if ldata["WeekDay_Number"] == nwdaynu :
+                    # calculate the differencies if it is the same day
+                    ndhp = nhp - ldata["Index_HP"]
+                    ndhc = nhc - ldata["Index_HC"]
+                    ndhphc = ndhp + ndhc
+                    nchp = ldata["Cumul_HP"] + ndhp
+                    nchc = ldata["Cumul_HC"] + ndhc
+                    nchphc = nchp + nchc
+                    # insert the new data
+                    cur.execute(SQLQuery, (nyear, nmonth, nday, nweekn, nwdaynu, ndayna, ndate, nhour,
+                                            nmode, nhp, nhc, ndhp, ndhc, ndhphc, nchp, nchc, nchphc))
+                else:
+                    # new day
+                    cur.execute(SQLQuery, (nyear, nmonth, nday, nweekn, nwdaynu, ndayna, ndate,
+                                            nhour, nmode, nhp, nhc, 0, 0, 0, 0, 0, 0))
+                    SQLQuery = 'INSERT INTO Year (Year, Month, Day,Week, Cumul_HP, Cumul_HC, Cumul_HPHC)\
+                                VALUES(?,?,?,?,?,?,?)'
+                    cur.execute(SQLQuery, (nyear, nmonth,nday,nweekn, ldata["Cumul_HP"], ldata["Cumul_HC"], ldata["Cumul_HPHC"]))
+
+
+
+            else:
+                # insert the new data
+                cur.execute(SQLQuery, (nyear, nmonth, nday, nweekn, nwdaynu, ndayna, ndate,
+                                        nhour, nmode, nhp, nhc, 0, 0, 0, 0, 0, 0))
+
+    except sqlite3.Error, e:
+        print "Error %s:" % e.args[0]
+
+
+
 
 
 def create_database():
@@ -413,43 +427,39 @@ def create_database():
     conn = sqlite3.connect('mydatabase.db')
     # create a table
     with conn:
-
-        cur = conn.cursor()   Year,
+        cur = conn.cursor()
 
         # create a table for the week
         # create a table for the detailed Days
-        cur.execute('CREATE TABLE CurrentWeek( Year INTEGER,Year Integer,Week INTEGER,WeekDay_Number INTEGER,\
-                    Day INTEGER, Day_Name TEXT,Date TEXT, Hour TEXT, \
+        cur.execute('CREATE TABLE CurrentWeek(Year INTEGER, Month Integer, Day INTEGER,\
+                    Week_Number INTEGER, WeekDay_Number INTEGER,\
+                    Day_Name TEXT, Date TEXT, Hour TEXT, \
                     Mode TEXT, Index_HP INTEGER, Index_HC INTEGER, \
                     Diff_HP INTEGER, Diff_HC INTEGER, Diff_HPHC INTEGER, \
                     Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER, \
                     Dummy1 INTEGER, Dummy2 INTEGER );')
 
-        cur.execute('CREATE TABLE Week(Year INTEGER, Week INTEGER, \
-                    Index_HP INTEGER, Index_HC INTEGER, \
-                    Diff_HP INTEGER, Diff_HC INTEGER, Diff_HPHC INTEGER, \
-                    Dummy1 INTEGER, Dummy2 INTEGER);')
+        cur.execute('CREATE TABLE Week(Year INTEGER, Week_Number INTEGER, \
+                     Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER, \
+                     Dummy1 INTEGER, Dummy2 INTEGER);')
 
         # create a table for the Month
         cur.execute('CREATE TABLE Month(Year INTEGER, Month INTEGER, Month_Name TEXT,\
-                    Index_HP INTEGER, Index_HC INTEGER, \
-                    Diff_HP INTEGER, Diff_HC INTEGER, Diff_HPHC INTEGER, \
+                    Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER, \
                     Dummy1 INTEGER, Dummy2 INTEGER);')
 
         # create a table for the Days
-        cur.execute('CREATE TABLE Year(Year INTEGER, Month INTEGER, Day INTEGER, \
-                    Index_HP INTEGER, Index_HC INTEGER, \
-                    Diff_HP INTEGER, Diff_HC INTEGER, Diff_HPHC INTEGER, \
+        cur.execute('CREATE TABLE Year(Year INTEGER, Month INTEGER, Day INTEGER,Week INTEGER, \
+                    Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER, \
                     Dummy1 INTEGER, Dummy2 INTEGER);')
-
 
 
 if __name__ == '__main__':
 
-    #print epoch_to_weekday_number(1432117359)
+    # print epoch_to_weekday_number(1432117359)
     #print epoch_to_weekday_name(1432117359)
     create_database()
     #testdb_insert('Week',1023,118)
-    for ligne in range(1, 50):
+    for ligne in range(1, 420):
         nliste = teststring()
         testdb_dic_insert(nliste)
