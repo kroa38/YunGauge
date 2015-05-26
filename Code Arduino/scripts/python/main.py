@@ -294,9 +294,9 @@ def teststring():
         mode = "HC"
 
     if mode == "HP":
-        index_hp += abs(random.randint(1, 100))  # increment HP during HP time
+        index_hp += 1 #abs(random.randint(1, 100))  # increment HP during HP time
     if mode == "HC":
-        index_hc += abs(random.randint(1, 100))  # increment HC during HC time
+        index_hc += 1 #abs(random.randint(1, 100))  # increment HC during HC time
 
     liste1 = [index_hp, index_hc, mode, datetime_iso8601]
     liste2 = [index_hp, index_hc, mode]
@@ -367,20 +367,44 @@ def testdb_dic_insert(liste):
             conn.row_factory = sqlite3.Row
             cur = conn.cursor()
 
-            # count number of row already inserted
+            # count number of row already inserted in table currentweek **************************************
             cur.execute('SELECT Count() FROM %s' % 'CurrentWeek')
             count = cur.fetchone()[0]
 
-            SQLQuery = 'INSERT INTO CurrentWeek (Year,Month,Day,Week_Number,WeekDay_Number,Day_Name,Date,Hour,\
+            if count == 0:  # init case
+
+                SQLQuery = 'INSERT INTO CurrentWeek (Year,Month,Day,Week_Number,WeekDay_Number,Day_Name,Date,Hour,\
+                            Mode, Index_HP, Index_HC, Diff_HP, Diff_HC, Diff_HPHC,\
+                            Cumul_HP, Cumul_HC, Cumul_HPHC)\
+                            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
+                cur.execute(SQLQuery, (nyear, nmonth, nday, nweekn, nwdaynu, ndayna, ndate,
+                                        nhour, nmode, nhp, nhc, 0, 0, 0, 0, 0, 0))
+
+                SQLQuery = 'INSERT INTO Week (Year, Week_Number,\
+                            Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC)\
+                            VALUES(?,?,?,?,?,?,?)'
+                cur.execute(SQLQuery, (nyear, nweekn,nhp, nhc, 0, 0, 0))
+
+                SQLQuery = 'INSERT INTO Month (Year, Month,\
+                            Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC)\
+                            VALUES(?,?,?,?,?,?,?)'
+                cur.execute(SQLQuery, (nyear, nmonth, nhp, nhc, 0, 0, 0))
+
+                SQLQuery = 'INSERT INTO Year (Year, Month, Day, \
+                            Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC)\
+                            VALUES(?,?,?,?,?,?,?,?)'
+                cur.execute(SQLQuery, (nyear, nmonth,nday, nhp, nhc, 0, 0, 0))
+
+            else:
+
+                # select the last inserted data in CurrentWeek *******************************************
+                cur.execute('SELECT * FROM CurrentWeek WHERE rowid = %s' % count)
+                ldata = cur.fetchone()
+
+                SQLQuery = 'INSERT INTO CurrentWeek (Year,Month,Day,Week_Number,WeekDay_Number,Day_Name,Date,Hour,\
                         Mode, Index_HP, Index_HC, Diff_HP, Diff_HC, Diff_HPHC,\
                         Cumul_HP, Cumul_HC, Cumul_HPHC)\
                         VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
-
-            if count != 0:
-
-                # select the last inserted data
-                cur.execute('SELECT * FROM CurrentWeek WHERE rowid = %s' % count)
-                ldata = cur.fetchone()
 
                 if ldata["WeekDay_Number"] == nwdaynu :
                     # calculate the differencies if it is the same day
@@ -397,23 +421,31 @@ def testdb_dic_insert(liste):
                     # new day
                     cur.execute(SQLQuery, (nyear, nmonth, nday, nweekn, nwdaynu, ndayna, ndate,
                                             nhour, nmode, nhp, nhc, 0, 0, 0, 0, 0, 0))
-                    SQLQuery = 'INSERT INTO Year (Year, Month, Day,Week, Cumul_HP, Cumul_HC, Cumul_HPHC)\
+
+
+                # count number of row already inserted in table week **************************************
+                cur.execute('SELECT Count() FROM Week')
+                count = cur.fetchone()[0]
+                cur.execute('SELECT * FROM Week WHERE rowid = %s' % count)
+                ldata = cur.fetchone()
+
+                if ldata["Week_Number"] == nweekn:
+
+                     nchp = nhp - ldata["Index_HP"]
+                     nchc = nhc - ldata["Index_HC"]
+                     nchphc = nchp + nchc
+                     cur.execute('UPDATE  Week SET CUMUL_HP = %s WHERE rowid = %s' % (nchp,count))
+                     cur.execute('UPDATE  Week SET CUMUL_HC = %s WHERE rowid = %s' % (nchc,count))
+                     cur.execute('UPDATE  Week SET CUMUL_HPHC = %s WHERE rowid = %s'% (nchphc,count))
+                else:
+                    # new week
+                    SQLQuery = 'INSERT INTO Week (Year, Week_Number,\
+                                Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC)\
                                 VALUES(?,?,?,?,?,?,?)'
-                    cur.execute(SQLQuery, (nyear, nmonth,nday,nweekn, ldata["Cumul_HP"], ldata["Cumul_HC"], ldata["Cumul_HPHC"]))
-
-
-
-            else:
-                # insert the new data
-                cur.execute(SQLQuery, (nyear, nmonth, nday, nweekn, nwdaynu, ndayna, ndate,
-                                        nhour, nmode, nhp, nhc, 0, 0, 0, 0, 0, 0))
+                    cur.execute(SQLQuery, (nyear, nweekn,nhp, nhc, 0, 0, 0))
 
     except sqlite3.Error, e:
         print "Error %s:" % e.args[0]
-
-
-
-
 
 def create_database():
     """
@@ -436,22 +468,18 @@ def create_database():
                     Day_Name TEXT, Date TEXT, Hour TEXT, \
                     Mode TEXT, Index_HP INTEGER, Index_HC INTEGER, \
                     Diff_HP INTEGER, Diff_HC INTEGER, Diff_HPHC INTEGER, \
-                    Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER, \
-                    Dummy1 INTEGER, Dummy2 INTEGER );')
+                    Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER);')
 
         cur.execute('CREATE TABLE Week(Year INTEGER, Week_Number INTEGER, \
-                     Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER, \
-                     Dummy1 INTEGER, Dummy2 INTEGER);')
+                     Index_HP INTEGER, Index_HC INTEGER, Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER);')
 
         # create a table for the Month
-        cur.execute('CREATE TABLE Month(Year INTEGER, Month INTEGER, Month_Name TEXT,\
-                    Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER, \
-                    Dummy1 INTEGER, Dummy2 INTEGER);')
+        cur.execute('CREATE TABLE Month(Year INTEGER, Month INTEGER, \
+                    Index_HP INTEGER, Index_HC INTEGER, Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER);')
 
         # create a table for the Days
-        cur.execute('CREATE TABLE Year(Year INTEGER, Month INTEGER, Day INTEGER,Week INTEGER, \
-                    Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER, \
-                    Dummy1 INTEGER, Dummy2 INTEGER);')
+        cur.execute('CREATE TABLE Year(Year INTEGER, Month INTEGER, Day INTEGER, \
+                    Index_HP INTEGER, Index_HC INTEGER,Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER);')
 
 
 if __name__ == '__main__':
@@ -460,6 +488,6 @@ if __name__ == '__main__':
     #print epoch_to_weekday_name(1432117359)
     create_database()
     #testdb_insert('Week',1023,118)
-    for ligne in range(1, 420):
+    for ligne in range(1, 18):
         nliste = teststring()
         testdb_dic_insert(nliste)
