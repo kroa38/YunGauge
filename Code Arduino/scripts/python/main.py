@@ -357,12 +357,13 @@ def testdb_dic_insert(liste):
     nyear = epoch_to_year(nepoch)
     nmonth = epoch_to_month(nepoch)
     nday = epoch_to_day(nepoch)
+    MAX_WEEK_TABLE = 4
 
     try:
         conn = sqlite3.connect('mydatabase.db')
 
         with conn:
-            # connect in dictionary mode
+            # connect database in dictionary mode
             conn.row_factory = sqlite3.Row
             cur = conn.cursor()
 
@@ -472,6 +473,16 @@ def testdb_dic_insert(liste):
                     # new week
                     nchp = previous_data['Index_HP'] + previous_data['Cumul_HP']
                     nchc = previous_data['Index_HC'] + previous_data['Cumul_HC']
+                    if count == MAX_WEEK_TABLE:
+                        cur.execute('DROP table if exists CurrentWeek')
+                        # create a table for the detailed Days
+                        cur.execute('CREATE TABLE CurrentWeek(Year INTEGER, Month Integer, Day INTEGER,\
+                                    Week_Number INTEGER, WeekDay_Number INTEGER,\
+                                    Day_Name TEXT, Date TEXT, Hour TEXT, \
+                                    Mode TEXT, Index_HP INTEGER, Index_HC INTEGER, \
+                                    Diff_HP INTEGER, Diff_HC INTEGER, Diff_HPHC INTEGER, \
+                                    Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER);')
+
                     sqlquery = 'INSERT INTO Week (Year, Week_Number,\
                                 Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC)\
                                 VALUES(?,?,?,?,?,?,?)'
@@ -568,6 +579,6 @@ if __name__ == '__main__':
     #print epoch_to_weekday_name(1432117359)
     create_database()
     #testdb_insert('Week',1023,118)
-    for ligne in range(0,10):
+    for ligne in range(0,100):
         nliste = teststring()
         testdb_dic_insert(nliste)
