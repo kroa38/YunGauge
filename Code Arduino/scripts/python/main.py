@@ -40,7 +40,7 @@ SHEET_SCOPE = 'https://spreadsheets.google.com/feeds'
 
 index_hp = 1451100
 index_hc = 1323000
-epochdate = 1022419000
+epochdate = 1022401000
 
 
 def get_index():
@@ -166,7 +166,7 @@ def epoch_to_date(epochtime):
     """
     return the hour from epoch time
     in : Int
-    Out Int
+    Out string
     """
     return strftime("%d-%m-%Y", localtime(epochtime))
 
@@ -177,7 +177,7 @@ def epoch_to_year(epochtime):
     in : Int
     Out Int
     """
-    return strftime("%Y", localtime(epochtime))
+    return int(strftime("%Y", localtime(epochtime)))
 
 
 def epoch_to_month(epochtime):
@@ -186,7 +186,7 @@ def epoch_to_month(epochtime):
     in : Int
     Out Int
     """
-    return strftime("%m", localtime(epochtime))
+    return int(strftime("%m", localtime(epochtime)))
 
 
 def epoch_to_day(epochtime):
@@ -195,7 +195,7 @@ def epoch_to_day(epochtime):
     in : Int
     Out Int
     """
-    return strftime("%d", localtime(epochtime))
+    return int(strftime("%d", localtime(epochtime)))
 
 
 def epoch_to_hourminute(epochtime):
@@ -259,7 +259,7 @@ def epoch_to_weekday_number(epochtime):
     1 =
     ex : 1431959458 return : 1
     in : Int
-    Out String
+    Out int
     """
     dayt = int(datetime.fromtimestamp(epochtime).strftime("%w"))
     if dayt == 0:
@@ -277,7 +277,7 @@ def teststring():
     global index_hc
     global index_hp
     global epochdate
-    epochdate += 3627
+    epochdate += 3642*12
 
     datetime_iso8601 = epoch_to_iso8601(epochdate)
     heures = int(epoch_to_hour(epochdate))
@@ -389,7 +389,7 @@ def testdb_dic_insert(liste):
                             VALUES(?,?,?,?,?,?,?)'
                 cur.execute(sqlquery, (nyear, nmonth, nhp, nhc, 0, 0, 0))
 
-                sqlquery = 'INSERT INTO Year (Year, Month, Day, \
+                sqlquery = 'INSERT INTO Day (Year, Month, Day, \
                             Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC)\
                             VALUES(?,?,?,?,?,?,?,?)'
                 cur.execute(sqlquery, (nyear, nmonth,nday, nhp, nhc, 0, 0, 0))
@@ -416,6 +416,16 @@ def testdb_dic_insert(liste):
                     # insert the new data
                     cur.execute(sqlquery, (nyear, nmonth, nday, nweekn, nwdaynu, ndayna, ndate, nhour,
                                            nmode, nhp, nhc, ndhp, ndhc, ndhphc, nchp, nchc, nchphc))
+
+                    # Update table Day
+                    cur.execute('SELECT Count() FROM Day')
+                    county = cur.fetchone()[0]
+                    cur.execute('UPDATE  Day SET Index_HP = %s WHERE rowid = %s' % (nhp, county))
+                    cur.execute('UPDATE  Day SET Index_HC = %s WHERE rowid = %s' % (nhc, county))
+                    cur.execute('UPDATE  Day SET Cumul_HP = %s WHERE rowid = %s' % (nchp, county))
+                    cur.execute('UPDATE  Day SET Cumul_HC = %s WHERE rowid = %s' % (nchc, county))
+                    cur.execute('UPDATE  Day SET Cumul_HPHC = %s WHERE rowid = %s' % (nchphc, county))
+
                 else:
                     # new day
                     ndhp = nhp - previous_data['Index_HP']
@@ -426,6 +436,11 @@ def testdb_dic_insert(liste):
                     nchphc = nchp + nchc
                     cur.execute(sqlquery, (nyear, nmonth, nday, nweekn, nwdaynu, ndayna, ndate,
                                            nhour, nmode, nhp, nhc, ndhp, ndhc, ndhphc, nchp, nchc, nchphc))
+                    # Update table Year
+                    sqlquery = 'INSERT INTO Day (Year, Month, Day, Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC)\
+                                            VALUES(?,?,?,?,?,?,?,?)'
+                    cur.execute(sqlquery, (nyear, nmonth, nday, 0, 0, 0, 0, 0))
+
 
                 # ###############################  Week PROCESSING    ##############################################
                 cur.execute('SELECT Count() FROM Week')
@@ -434,7 +449,6 @@ def testdb_dic_insert(liste):
                 previous_data = cur.fetchone()
 
                 if previous_data['Week_Number'] == nweekn:
-
                     nchp = nhp - previous_data['Index_HP']
                     nchc = nhc - previous_data['Index_HC']
                     nchphc = nchp + nchc
@@ -443,21 +457,19 @@ def testdb_dic_insert(liste):
                     cur.execute('UPDATE  Week SET CUMUL_HPHC = %s WHERE rowid = %s' % (nchphc, count))
                 else:
                     # new week
-                    nhp_week = previous_data['Index_HP'] + previous_data['Cumul_HP']
-                    nhc_week = previous_data['Index_HC'] + previous_data['Cumul_HC']
+                    nchp = previous_data['Index_HP'] + previous_data['Cumul_HP']
+                    nchc = previous_data['Index_HC'] + previous_data['Cumul_HC']
                     sqlquery = 'INSERT INTO Week (Year, Week_Number,\
                                 Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC)\
                                 VALUES(?,?,?,?,?,?,?)'
-                    cur.execute(sqlquery, (nyear, nweekn, nhp_week, nhc_week, 0, 0, 0))
+                    cur.execute(sqlquery, (nyear, nweekn, nchp, nchc, 0, 0, 0))
 
                 # ###############################  Month PROCESSING    ##############################################
-
                 cur.execute('SELECT Count() FROM Month')
                 count = cur.fetchone()[0]
                 cur.execute('SELECT * FROM Month WHERE rowid = %s' % count)
                 previous_data = cur.fetchone()
-
-                if previous_data['Month'] == nmonth:
+                if  previous_data['Month'] == nmonth:
                     nchp = nhp - previous_data['Index_HP']
                     nchc = nhc - previous_data['Index_HC']
                     nchphc = nchp + nchc
@@ -466,12 +478,12 @@ def testdb_dic_insert(liste):
                     cur.execute('UPDATE  Month SET CUMUL_HPHC = %s WHERE rowid = %s' % (nchphc, count))
                 else:
                     # new month
-                    nhp_month = previous_data['Index_HP'] + previous_data['Cumul_HP']
-                    nhc_month = previous_data['Index_HC'] + previous_data['Cumul_HC']
+                    nchp = previous_data['Index_HP'] + previous_data['Cumul_HP']
+                    nchc = previous_data['Index_HC'] + previous_data['Cumul_HC']
                     sqlquery = 'INSERT INTO Month (Year, Month,\
                                 Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC)\
                                 VALUES(?,?,?,?,?,?,?)'
-                    cur.execute(sqlquery, (nyear, nmonth, nhp_month, nhc_month, 0, 0, 0))
+                    cur.execute(sqlquery, (nyear, nmonth, nchp, nchc, 0, 0, 0))
 
 
     except sqlite3.Error, e:
@@ -502,14 +514,15 @@ def create_database():
                     Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER);')
 
         cur.execute('CREATE TABLE Week(Year INTEGER, Week_Number INTEGER, \
-                     Index_HP INTEGER, Index_HC INTEGER, Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER);')
+                     Index_HP INTEGER, Index_HC INTEGER,\
+                     Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER);')
 
         # create a table for the Month
         cur.execute('CREATE TABLE Month(Year INTEGER, Month INTEGER, \
                     Index_HP INTEGER, Index_HC INTEGER, Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER);')
 
         # create a table for the Days
-        cur.execute('CREATE TABLE Year(Year INTEGER, Month INTEGER, Day INTEGER, \
+        cur.execute('CREATE TABLE Day(Year INTEGER, Month INTEGER, Day INTEGER, \
                     Index_HP INTEGER, Index_HC INTEGER,Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER);')
 
 
@@ -519,6 +532,6 @@ if __name__ == '__main__':
     #print epoch_to_weekday_name(1432117359)
     create_database()
     #testdb_insert('Week',1023,118)
-    for ligne in range(0,11):
+    for ligne in range(0,100):
         nliste = teststring()
         testdb_dic_insert(nliste)
