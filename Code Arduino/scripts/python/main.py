@@ -357,7 +357,7 @@ def testdb_dic_insert(liste):
     nyear = epoch_to_year(nepoch)
     nmonth = epoch_to_month(nepoch)
     nday = epoch_to_day(nepoch)
-    MAX_WEEK_TABLE = 4
+    MAX_WEEK_TABLE = 1
 
     try:
         conn = sqlite3.connect('mydatabase.db')
@@ -373,8 +373,8 @@ def testdb_dic_insert(liste):
 
             if count == 0:  # init case
 
-                sqlquery = 'INSERT INTO CurrentWeek (Year,Month,Day,Week_Number,WeekDay_Number,Day_Name,Date,Hour,\
-                            Mode, Index_HP, Index_HC, Diff_HP, Diff_HC, Diff_HPHC,\
+                sqlquery = 'INSERT INTO CurrentWeek (Year, Month, Day, Week_Number, WeekDay_Number, Day_Name, Date,Hour,\
+                            Mode, Index_HP, Index_HC, Diff_HP, Diff_HC, Diff_HPHC , \
                             Cumul_HP, Cumul_HC, Cumul_HPHC)\
                             VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
                 cur.execute(sqlquery, (nyear, nmonth, nday, nweekn, nwdaynu, ndayna, ndate,
@@ -419,7 +419,6 @@ def testdb_dic_insert(liste):
                     nchp = previous_data['Cumul_HP'] + ndhp
                     nchc = previous_data['Cumul_HC'] + ndhc
                     nchphc = nchp + nchc
-                    # insert the new data
                     cur.execute(sqlquery, (nyear, nmonth, nday, nweekn, nwdaynu, ndayna, ndate, nhour,
                                            nmode, nhp, nhc, ndhp, ndhc, ndhphc, nchp, nchc, nchphc))
 
@@ -431,6 +430,7 @@ def testdb_dic_insert(liste):
                     nchp = ndhp
                     nchc = ndhc
                     nchphc = nchp + nchc
+
                     cur.execute(sqlquery, (nyear, nmonth, nday, nweekn, nwdaynu, ndayna, ndate,
                                            nhour, nmode, nhp, nhc, ndhp, ndhc, ndhphc, nchp, nchc, nchphc))
 
@@ -473,20 +473,17 @@ def testdb_dic_insert(liste):
                     # new week
                     nchp = previous_data['Index_HP'] + previous_data['Cumul_HP']
                     nchc = previous_data['Index_HC'] + previous_data['Cumul_HC']
-                    if count == MAX_WEEK_TABLE:
-                        cur.execute('DROP table if exists CurrentWeek')
-                        # create a table for the detailed Days
-                        cur.execute('CREATE TABLE CurrentWeek(Year INTEGER, Month Integer, Day INTEGER,\
-                                    Week_Number INTEGER, WeekDay_Number INTEGER,\
-                                    Day_Name TEXT, Date TEXT, Hour TEXT, \
-                                    Mode TEXT, Index_HP INTEGER, Index_HC INTEGER, \
-                                    Diff_HP INTEGER, Diff_HC INTEGER, Diff_HPHC INTEGER, \
-                                    Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER);')
-
                     sqlquery = 'INSERT INTO Week (Year, Week_Number,\
                                 Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC)\
                                 VALUES(?,?,?,?,?,?,?)'
                     cur.execute(sqlquery, (nyear, nweekn, nchp, nchc, 0, 0, 0))
+
+                    # remove rows if there is more than 4 week in the table CurrentWeek
+                    if count > 3:
+                        cur.execute('SELECT * FROM CurrentWeek')
+                        laweek = cur.fetchone()['Week_Number']
+                        cur.execute('DELETE FROM CurrentWeek WHERE Week_Number = %s' % laweek)
+                        print "delete rows %s" % laweek
 
                 # ###############################  Month PROCESSING    ##############################################
                 cur.execute('SELECT Count() FROM Month')
@@ -523,13 +520,25 @@ def testdb_dic_insert(liste):
                     cur.execute('UPDATE  Year SET CUMUL_HC = %s WHERE rowid = %s' % (nchc, count))
                     cur.execute('UPDATE  Year SET CUMUL_HPHC = %s WHERE rowid = %s' % (nchphc, count))
                 else:
-                    # new week
+                    # new year
                     nchp = previous_data['Index_HP'] + previous_data['Cumul_HP']
                     nchc = previous_data['Index_HC'] + previous_data['Cumul_HC']
                     sqlquery = 'INSERT INTO Year (Year, \
                                 Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC)\
                                 VALUES(?,?,?,?,?,?)'
                     cur.execute(sqlquery, (nyear, nchp, nchc, 0, 0, 0))
+
+                # delete row
+                '''
+                cur.execute('SELECT Count() FROM %s' % 'CurrentWeek')
+                count = cur.fetchone()[0]
+                cur.execute('SELECT * FROM CurrentWeek WHERE rowid = %s' % count)
+                previous_data = cur.fetchone()
+                last_row = previous_data['IDW']
+                cur.execute('SELECT * FROM CurrentWeek')
+                first_row = cur.fetchone()['IDW']
+                if last_row - first_row == 3:
+                    cur.execute('DELETE FROM CurrentWeek WHERE IDW = %s' % first_row )'''
 
     except sqlite3.Error, e:
         print "Error %s:" % e.args[0]
@@ -579,6 +588,6 @@ if __name__ == '__main__':
     #print epoch_to_weekday_name(1432117359)
     create_database()
     #testdb_insert('Week',1023,118)
-    for ligne in range(0,100):
+    for ligne in range(0,68):
         nliste = teststring()
         testdb_dic_insert(nliste)
