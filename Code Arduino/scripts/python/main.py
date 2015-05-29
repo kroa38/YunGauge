@@ -479,12 +479,12 @@ def testdb_dic_insert(liste):
                     cur.execute(sqlquery, (nyear, nweekn, nchp, nchc, 0, 0, 0))
 
                     # remove rows if there is more than 4 week in the table CurrentWeek
-                    maxweek = 4
+                    maxweek = 2
                     if count > maxweek:
                         cur.execute('SELECT * FROM Week WHERE rowid = %s' % count)
                         last_week = cur.fetchone()['Week_Number'] - maxweek
                         cur.execute('DELETE FROM CurrentWeek WHERE Week_Number = %s' % last_week)
-                        print "delete rows %s" % last_week
+                        cur.execute('VACUUM')
                         pass
 
                 # ###############################  Month PROCESSING    ##############################################
@@ -574,24 +574,24 @@ def create_database():
             cur = conn.cursor()
 
             # create a table for the detailed Days
-            cur.execute('CREATE TABLE CurrentWeek(rowid INTEGER PRIMARY KEY, Year INTEGER, Month INTEGER, Day INTEGER,\
+            cur.execute('CREATE TABLE CurrentWeek( Year INTEGER, Month INTEGER, Day INTEGER,\
                         Week_Number INTEGER, WeekDay_Number INTEGER,\
                         Day_Name TEXT, Date TEXT, Hour TEXT, \
                         Mode TEXT, Index_HP INTEGER, Index_HC INTEGER, \
                         Diff_HP INTEGER, Diff_HC INTEGER, Diff_HPHC INTEGER, \
                         Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER);')
             # create a table for the Days
-            cur.execute('CREATE TABLE Day(rowid INTEGER PRIMARY KEY,Year INTEGER, Month INTEGER, Day INTEGER, \
+            cur.execute('CREATE TABLE Day(Year INTEGER, Month INTEGER, Day INTEGER, \
                         Index_HP INTEGER, Index_HC INTEGER,Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER);')
             # create a table for the week
-            cur.execute('CREATE TABLE Week(rowid INTEGER PRIMARY KEY,Year INTEGER, Week_Number INTEGER, \
+            cur.execute('CREATE TABLE Week(Year INTEGER, Week_Number INTEGER, \
                          Index_HP INTEGER, Index_HC INTEGER,\
                          Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER);')
             # create a table for the Month
-            cur.execute('CREATE TABLE Month(rowid INTEGER PRIMARY KEY,Year INTEGER, Month INTEGER, \
+            cur.execute('CREATE TABLE Month(Year INTEGER, Month INTEGER, \
                         Index_HP INTEGER, Index_HC INTEGER, Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER);')
             # create a table for the Year
-            cur.execute('CREATE TABLE Year(rowid INTEGER PRIMARY KEY,Year INTEGER, \
+            cur.execute('CREATE TABLE Year(Year INTEGER, \
                         Index_HP INTEGER, Index_HC INTEGER, Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER);')
 
     except sqlite3.Error, e:
