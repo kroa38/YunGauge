@@ -403,13 +403,13 @@ def testdb_dic_insert(liste):
             else:
 
                 # ############################### CurrentWeek PROCESSING    ##############################################
-                cur.execute('SELECT * FROM CurrentWeek WHERE rowid = %s' % count)
-                previous_data = cur.fetchone()
 
                 sqlquery = 'INSERT INTO CurrentWeek (Year,Month,Day,Week_Number,WeekDay_Number,Day_Name,Date,Hour,\
-                        Mode, Index_HP, Index_HC, Diff_HP, Diff_HC, Diff_HPHC,\
-                        Cumul_HP, Cumul_HC, Cumul_HPHC)\
+                        Mode, Index_HP, Index_HC, Diff_HP, Diff_HC, Diff_HPHC, Cumul_HP, Cumul_HC, Cumul_HPHC)\
                         VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
+
+                cur.execute('SELECT * FROM CurrentWeek WHERE rowid = %s' % count)
+                previous_data = cur.fetchone()
 
                 if previous_data['WeekDay_Number'] == nwdaynu:
                     # calculate the differencies if it is the same day
@@ -479,11 +479,13 @@ def testdb_dic_insert(liste):
                     cur.execute(sqlquery, (nyear, nweekn, nchp, nchc, 0, 0, 0))
 
                     # remove rows if there is more than 4 week in the table CurrentWeek
-                    if count > 3:
-                        cur.execute('SELECT * FROM CurrentWeek')
-                        laweek = cur.fetchone()['Week_Number']
-                        cur.execute('DELETE FROM CurrentWeek WHERE Week_Number = %s' % laweek)
-                        print "delete rows %s" % laweek
+                    maxweek = 4
+                    if count > maxweek:
+                        cur.execute('SELECT * FROM Week WHERE rowid = %s' % count)
+                        last_week = cur.fetchone()['Week_Number'] - maxweek
+                        cur.execute('DELETE FROM CurrentWeek WHERE Week_Number = %s' % last_week)
+                        print "delete rows %s" % last_week
+                        pass
 
                 # ###############################  Month PROCESSING    ##############################################
                 cur.execute('SELECT Count() FROM Month')
@@ -528,20 +530,33 @@ def testdb_dic_insert(liste):
                                 VALUES(?,?,?,?,?,?)'
                     cur.execute(sqlquery, (nyear, nchp, nchc, 0, 0, 0))
 
-                # delete row
-                '''
-                cur.execute('SELECT Count() FROM %s' % 'CurrentWeek')
-                count = cur.fetchone()[0]
-                cur.execute('SELECT * FROM CurrentWeek WHERE rowid = %s' % count)
-                previous_data = cur.fetchone()
-                last_row = previous_data['IDW']
-                cur.execute('SELECT * FROM CurrentWeek')
-                first_row = cur.fetchone()['IDW']
-                if last_row - first_row == 3:
-                    cur.execute('DELETE FROM CurrentWeek WHERE IDW = %s' % first_row )'''
+    except sqlite3.Error, e:
+        print "Error %s:" % e.args[0]
+
+
+def bugtest():
+
+    try:
+        conn = sqlite3.connect('mydatabase.db')
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        cur.execute('SELECT Count(*) FROM %s' % 'CurrentWeek')
+        count = cur.fetchone()[0]
+        print count
+        #cur.execute('SELECT * FROM CurrentWeek WHERE rowid = %S' % count)
+        cur.execute('SELECT MAX(rowid) FROM CurrentWeek')
+        previous_data = cur.fetchone()[0]
+        toto = previous_data
+        print "toto %s" % toto
+        pass
 
     except sqlite3.Error, e:
         print "Error %s:" % e.args[0]
+
+    finally:
+        if conn:
+            conn.close()
+
 
 
 def create_database():
@@ -552,42 +567,44 @@ def create_database():
     """
     if os.path.isfile('mydatabase.db'):
         os.remove('mydatabase.db')
+    try:
+        conn = sqlite3.connect('mydatabase.db')
+        # create a table
+        with conn:
+            cur = conn.cursor()
 
-    conn = sqlite3.connect('mydatabase.db')
-    # create a table
-    with conn:
-        cur = conn.cursor()
+            # create a table for the detailed Days
+            cur.execute('CREATE TABLE CurrentWeek(rowid INTEGER PRIMARY KEY, Year INTEGER, Month INTEGER, Day INTEGER,\
+                        Week_Number INTEGER, WeekDay_Number INTEGER,\
+                        Day_Name TEXT, Date TEXT, Hour TEXT, \
+                        Mode TEXT, Index_HP INTEGER, Index_HC INTEGER, \
+                        Diff_HP INTEGER, Diff_HC INTEGER, Diff_HPHC INTEGER, \
+                        Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER);')
+            # create a table for the Days
+            cur.execute('CREATE TABLE Day(rowid INTEGER PRIMARY KEY,Year INTEGER, Month INTEGER, Day INTEGER, \
+                        Index_HP INTEGER, Index_HC INTEGER,Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER);')
+            # create a table for the week
+            cur.execute('CREATE TABLE Week(rowid INTEGER PRIMARY KEY,Year INTEGER, Week_Number INTEGER, \
+                         Index_HP INTEGER, Index_HC INTEGER,\
+                         Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER);')
+            # create a table for the Month
+            cur.execute('CREATE TABLE Month(rowid INTEGER PRIMARY KEY,Year INTEGER, Month INTEGER, \
+                        Index_HP INTEGER, Index_HC INTEGER, Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER);')
+            # create a table for the Year
+            cur.execute('CREATE TABLE Year(rowid INTEGER PRIMARY KEY,Year INTEGER, \
+                        Index_HP INTEGER, Index_HC INTEGER, Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER);')
 
-
-        # create a table for the detailed Days
-        cur.execute('CREATE TABLE CurrentWeek(Year INTEGER, Month Integer, Day INTEGER,\
-                    Week_Number INTEGER, WeekDay_Number INTEGER,\
-                    Day_Name TEXT, Date TEXT, Hour TEXT, \
-                    Mode TEXT, Index_HP INTEGER, Index_HC INTEGER, \
-                    Diff_HP INTEGER, Diff_HC INTEGER, Diff_HPHC INTEGER, \
-                    Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER);')
-        # create a table for the Days
-        cur.execute('CREATE TABLE Day(Year INTEGER, Month INTEGER, Day INTEGER, \
-                    Index_HP INTEGER, Index_HC INTEGER,Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER);')
-        # create a table for the week
-        cur.execute('CREATE TABLE Week(Year INTEGER, Week_Number INTEGER, \
-                     Index_HP INTEGER, Index_HC INTEGER,\
-                     Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER);')
-        # create a table for the Month
-        cur.execute('CREATE TABLE Month(Year INTEGER, Month INTEGER, \
-                    Index_HP INTEGER, Index_HC INTEGER, Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER);')
-        # create a table for the Year
-        cur.execute('CREATE TABLE Year(Year INTEGER, \
-                    Index_HP INTEGER, Index_HC INTEGER, Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER);')
-
+    except sqlite3.Error, e:
+        print "Error %s:" % e.args[0]
 
 
 if __name__ == '__main__':
 
     # print epoch_to_weekday_number(1432117359)
     #print epoch_to_weekday_name(1432117359)
+    #bugtest()
     create_database()
     #testdb_insert('Week',1023,118)
-    for ligne in range(0,68):
+    for ligne in range(0,295):
         nliste = teststring()
         testdb_dic_insert(nliste)
