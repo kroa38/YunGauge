@@ -277,7 +277,7 @@ def teststring():
     global index_hc
     global index_hp
     global epochdate
-    epochdate += 3642*12
+    epochdate += 900
 
     datetime_iso8601 = epoch_to_iso8601(epochdate)
     heures = int(epoch_to_hour(epochdate))
@@ -357,7 +357,7 @@ def testdb_dic_insert(liste):
     nyear = epoch_to_year(nepoch)
     nmonth = epoch_to_month(nepoch)
     nday = epoch_to_day(nepoch)
-    MAX_WEEK_TABLE = 1
+    maxweek = 1
 
     try:
         conn = sqlite3.connect('mydatabase.db')
@@ -478,13 +478,14 @@ def testdb_dic_insert(liste):
                                 VALUES(?,?,?,?,?,?,?)'
                     cur.execute(sqlquery, (nyear, nweekn, nchp, nchc, 0, 0, 0))
 
-                    # remove rows if there is more than 4 week in the table CurrentWeek
-                    maxweek = 2
+                    # ----------------------------------------------------------------------------
+                    #     Remove Week in the CurrentWeek table
+                    # ----------------------------------------------------------------------------
                     if count > maxweek:
                         cur.execute('SELECT * FROM Week WHERE rowid = %s' % count)
                         last_week = cur.fetchone()['Week_Number'] - maxweek
                         cur.execute('DELETE FROM CurrentWeek WHERE Week_Number = %s' % last_week)
-                        cur.execute('VACUUM')
+                        cur.execute('VACUUM')  # #### VERY IMPORTANT ##### #
                         pass
 
                 # ###############################  Month PROCESSING    ##############################################
@@ -534,31 +535,6 @@ def testdb_dic_insert(liste):
         print "Error %s:" % e.args[0]
 
 
-def bugtest():
-
-    try:
-        conn = sqlite3.connect('mydatabase.db')
-        conn.row_factory = sqlite3.Row
-        cur = conn.cursor()
-        cur.execute('SELECT Count(*) FROM %s' % 'CurrentWeek')
-        count = cur.fetchone()[0]
-        print count
-        #cur.execute('SELECT * FROM CurrentWeek WHERE rowid = %S' % count)
-        cur.execute('SELECT MAX(rowid) FROM CurrentWeek')
-        previous_data = cur.fetchone()[0]
-        toto = previous_data
-        print "toto %s" % toto
-        pass
-
-    except sqlite3.Error, e:
-        print "Error %s:" % e.args[0]
-
-    finally:
-        if conn:
-            conn.close()
-
-
-
 def create_database():
     """
     Create a sqlite3 database
@@ -600,11 +576,8 @@ def create_database():
 
 if __name__ == '__main__':
 
-    # print epoch_to_weekday_number(1432117359)
-    #print epoch_to_weekday_name(1432117359)
-    #bugtest()
     create_database()
-    #testdb_insert('Week',1023,118)
-    for ligne in range(0,295):
+
+    for ligne in range(0,1000):
         nliste = teststring()
         testdb_dic_insert(nliste)
