@@ -1,7 +1,7 @@
 /********************************************************************************
 DEFINITIONS
 ********************************************************************************/
-#define DEBUG                                     // sortie console pour debug
+#undef DEBUG                                     // sortie console pour debug
 /*******************************************************************************/
 #define BUSYPIN 4                                 // n° de la pin Busy
 #define RTSPIN 6                                  // n° de la pin RTS (output)
@@ -9,8 +9,8 @@ DEFINITIONS
 #define LEDVERTE 13                               // LED verte pour test
 /*******************************************************************************/
 #define HOUR_ADJUST_CHECK 50UL*60UL*1000UL        // interval check pour la maj de l'heure de internet (50 minutes)
-#define HOUR_ADJUST_CHECK_THIN 1UL*60UL*1000UL    // interval check pour la maj de l'heure de internet (1 minutes)
-#define WAITFORLININO  5                         // temps d'attente de démarrage de linino (mini 50s)
+#define HOUR_ADJUST_CHECK_THIN 1UL*60UL*1000UL    // interval check pour la maj de l'heure de internet (10 minutes)
+#define WAITFORLININO  55                         // temps d'attente de démarrage de linino (mini 50s)
 /*******************************************************************************/
 #define DS1338_NVRAM_REG_SAMPLING              0  // Adresse offset Nvram du DS1338 pour la periode d'échantillonage
 #define DS1338_NVRAM_REG_UART_RTS_TELEINFO     1  // RTS qui dit qu'un message teleinfo est reçu
@@ -47,6 +47,7 @@ char  *epoch_to_iso8601(unsigned long millisAtEpoch);
 unsigned long timeInEpoch(void);
 uint8_t Is_DST_Time(void);
 void rtc_to_linino_date_update(void);
+void Srv_UpdateTeleinfoDb(String);
 
 /********************************************************************************
 FUNCTION DECLARATION IN SERVICE
@@ -57,6 +58,5 @@ void Srv_AdjustDateEveryDay(void);
 uint8_t Srv_PingGoogle(void);
 uint8_t isConnectedToInternet(void);
 void Srv_Ntp_To_Rtc_Update(void);
-void Srv_StoreEventTeleinfoToFile(void);
-void Srv_StoreEventDoorToFile(void);
+
 

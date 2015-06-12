@@ -8,9 +8,7 @@ void Srv_Out_Event(void)
    Srv_AdjustDateEveryDay();   
    Srv_PingGoogle();
    Srv_Ntp_To_Rtc_Update();
-   //Srv_StoreEventTeleinfoToFile();
-   //Srv_StoreEventDoorToFile();
-   
+   Srv_UpdateTeleinfoDb();  
 }
 /***********************************************************
 void read_uart_data(void)
@@ -68,29 +66,7 @@ void Srv_read_uart_data(void)
           if(crc == lastchar)
           {
             dataString.setCharAt(strln-1,0x20);  // supress 'crc char'
-            dataString.setCharAt(strln-2,0x20);  // supress ','
-            dataString.trim();                   // enlève espaces en fin de chaine
-            dataString += ',';
-  
-            if(Event.Test_Mode)
-            {
-              dataString += '"';
-              dataString += epoch_to_iso8601(epochunix);
-              dataString += '"';
-              epochunix += EPOCH_INCREMENT;
-            }
-            else
-            {
-              dataString += '"';
-              dataString += get_rtc_date(DATE_ISO8601);
-              dataString += '"';
-            }
-            // construct a python list....
-            String OutputString = "[";
-            OutputString += dataString;
-            OutputString += "]";
-            dataString = OutputString;
-            
+
             #ifdef DEBUG
             Serial.println(dataString);
             #endif
@@ -102,12 +78,12 @@ void Srv_read_uart_data(void)
          {
             if(dataString.startsWith(F("DOOR")))
             {
-              Event.StoreEventDoorToFile = 1;
+              Event.UpdateDoorDb = 1;
               Blink_Led(2);
             }
             else
             {
-              Event.StoreEventTeleinfoToFile = 1;
+              Event.UpdateTeleinfoDb = 1;
               Blink_Led(1);
             }
          }
@@ -311,95 +287,27 @@ void Srv_Ntp_To_Rtc_Update(void)
     }
 }
 
-
-
-
-
 /***********************************************************
-void Srv_StoreEventTeleinfoToFile()
-
-Met en forme la donnée reçu par l'uart avec la date
-et copie sur le fichier teleinfo.txt
-
+void Srv_UpdateTeleinfoDb();
+Met a jour la base de donnée teleinfo
+In : String
+Out : void
 ************************************************************/
+void Srv_UpdateTeleinfoDb(void)
+{ 
+    if(Event.UpdateTeleinfoDb)
+  {
+    Event.UpdateTeleinfoDb = 0;
+    String Pytcde = "python /root/python/main.py ";
+    Pytcde += dataString;
+   
+    #ifdef DEBUG 
+    Serial.println("Update Database Teleinfo");
+    #endif
 
-void Srv_StoreEventTeleinfoToFile(void)
-{
-  
-  if(Event.StoreEventTeleinfoToFile)
-   {
-    Event.StoreEventTeleinfoToFile = 0;
-        
-    File dataFile = FileSystem.open("/mnt/sda1/yungauge/script/python/teleinfo.log", FILE_APPEND);
+    Process shell;
+    shell.runShellCommand(Pytcde);
+    while(shell.running()); 
 
-    // if the file is available, write to it:
-    if (dataFile) 
-    {
-      #ifdef DEBUG 
-      Serial.println(F("Store to file teleinfo.log ..."));
-      #endif
-      // store to file
-      dataFile.println(dataString);
-      dataFile.close();
-      // blink led green
-      Blink_Led(2);           
-    }
-    else
-    {
-      #ifdef DEBUG  
-      Serial.print(F("Error File teleinfo.log ...."));
-      #endif
-      while(1)
-      {
-      Blink_Led(4); 
-      delay(50);
-      }
-    }
   }
-  
 }
-/***********************************************************
-void Srv_StoreEventDoorToFile()
-
-Met en forme la donnée reçu par l'uart avec la date
-et copie sur le fichier door.txt
-************************************************************/
-
-void Srv_StoreEventDoorToFile(void)
-{
-  if(Event.StoreEventDoorToFile)
-   {
-    Event.StoreEventDoorToFile = 0;
-        
-    File dataFile = FileSystem.open("/mnt/sda1/yungauge/door.log", FILE_APPEND);
-
-    // if the file is available, write to it:
-    if (dataFile) 
-    {
-      #ifdef DEBUG 
-      Serial.println(F("Store to file door.log ..."));
-      #endif
-      // store event to file
-      dataFile.println(dataString);
-      dataFile.close();
-      Blink_Led(2);                            
-    }
-    else
-    {
-      #ifdef DEBUG  
-      Serial.print(F("Error File door.log ...."));
-      #endif
-      while(1)
-      {
-      Blink_Led(20); 
-      delay(40);      
-      }
-    }
- 
-    
-  }
-  
-}
-
-
-

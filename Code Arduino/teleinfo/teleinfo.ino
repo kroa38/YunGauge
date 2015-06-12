@@ -27,8 +27,8 @@ struct Evenements
 {
      unsigned char Ntp_To_Rtc_Update            : 1;
      unsigned char PingGoogle   		: 1;
-     unsigned char StoreEventTeleinfoToFile     : 1;
-     unsigned char StoreEventDoorToFile         : 1;  
+     unsigned char UpdateTeleinfoDb             : 1;
+     unsigned char UpdateDoorDb                 : 1;  
      unsigned char Ntp_To_RTC_OK        	: 1; 
      unsigned char Uart_data_ready              : 1;
      unsigned char Test_Mode	                : 1;  
@@ -87,6 +87,8 @@ void GeneralInit(void)
   I2C_ClearToSend();  
   Event.Ntp_To_RTC_OK =0;             // on n'a pas encore mis à jour l'heure par internet
   Event.RTC_To_Linino_Update = 0;     // mise a jour de l'heure linino avec l'heure rtc
+  Event.UpdateTeleinfoDb = 0;
+  Event.UpdateDoorDb = 0;  
   WaitForLinino();                    // on attend que Linino soit demarré (~ 50 secondes)
  
     
@@ -400,8 +402,6 @@ void WaitForLinino(void)
     
     digitalWrite(BUSYPIN, LOW);        // BUSY = 0 la carte Shield peut demarrer.
     
-
-
 }
 /***********************************************************
 uint8_t Is_Uart_Data(void)
@@ -522,6 +522,7 @@ void rtc_to_linino_date_update(void)
     unsigned long rtc_epoch = now.unixtime();  // retrieve epoch time from RTC
     unsigned long linino_epoch = 0UL;
     unsigned long linino_tz = 0UL;
+    unsigned long diff_epoch;
     linino_epoch = ProcExec(F("date"),F("+%s")).toInt();
     linino_tz = ProcExec(F("date"),F("+%z")).substring(1,3).toInt();  // retrieve time zone
     linino_epoch += linino_tz*3600;
@@ -534,8 +535,12 @@ void rtc_to_linino_date_update(void)
     #endif
     
     if (rtc_epoch > linino_epoch)
-    {      
-     
+      diff_epoch = rtc_epoch - linino_epoch;
+    else
+      diff_epoch = linino_epoch - rtc_epoch;
+    
+    if (diff_epoch > 60)  // si ecart de plus de 1 minute alors mise à jour.
+    {          
       if(isdst) 
       {
         rtc_epoch -= 7200;    // substract 2 hours
