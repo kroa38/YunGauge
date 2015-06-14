@@ -24,9 +24,9 @@ import warnings  # Used for the warning InsecurePlatformWarning in python 2.7.3
 import plotly
 import plotly.plotly as py
 import plotly.tools as tls
-import urllib2          # lib pour requettes internet
 import sqlite3
 import calendar
+import urllib2  # lib pour requettes internet
 import os.path  # lib pour test fichiers
 from plotly.graph_objs import *
 from cloudscope import log_error
@@ -38,8 +38,8 @@ from time import gmtime, localtime, strftime
 DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive '
 GMAIL_SCOPE = 'https://mail.google.com/'
 SHEET_SCOPE = 'https://spreadsheets.google.com/feeds'
-DATABASE_NAME = 'database.db'
-
+DATABASE_NAME = '/root/python/database.db'
+#DATABASE_NAME = 'database.db'
 index_hp = 5451113
 index_hc = 5323021
 epochdate = 1022401000
@@ -116,6 +116,26 @@ def cvs_to_json():
     jsonfile.write('\b]\n')
 
 
+def plotly_test():
+    """ Plotly test
+    before using you must run he command below. This command create a credential json file
+    in your $HOME/.plotly directory.
+    plotly.tools.set_credentials_file(username='username', api_key='key', stream_ids=['id1', 'id2'])
+    :itype : none
+    :rtype : None
+    """
+    # Used for ignore the warning InsecurePlatformWarning in python 2.7.3
+    requests.packages.urllib3.disable_warnings()
+
+    credentials = tls.get_credentials_file()
+    trace0 = Scatter(x=[1, 2, 3, 4], y=[50, 15, 23, 17])
+    trace1 = Scatter(x=[1, 2, 3, 4], y=[161, 500, 511, 999])
+
+    data = Data([trace0, trace1])
+
+    unique_url = py.plot(data, filename='basic-line')
+
+
 def epoch_to_iso8601(epochtime):
     """
     convert the unix epoch time into a iso8601 formatted date
@@ -133,6 +153,7 @@ def iso8601_to_epoch(datestring):
     Out :
     """
     return calendar.timegm(datetime.strptime(datestring, "%Y-%m-%dT%H:%M:%S").timetuple())
+
 
 def iso8601_to_year():
     """
@@ -159,6 +180,7 @@ def iso8601_to_year():
     datestring = int(datetime.now().strftime("%W"))
     print datestring
     '''return calendar.timegm(datetime.strptime(datestring, "%Y").timetuple())'''
+
 
 def epoch_to_hour(epochtime):
     """
@@ -292,9 +314,11 @@ def teststring():
 
     mode = "HP"
 
-    if (heures * 60 + minutes > 15 * 60 + 38) and (heures * 60 + minutes < 17 * 60 + 38):  # check between 15h38 and 17h38
+    if (heures * 60 + minutes > 15 * 60 + 38) and (
+                        heures * 60 + minutes < 17 * 60 + 38):  # check between 15h38 and 17h38
         mode = "HC"
-    if (heures * 60 + minutes > 21 * 60 + 8) and (heures * 60 + minutes < 23 * 60 + 59):  # check between 21h08 and 23h59
+    if (heures * 60 + minutes > 21 * 60 + 8) and (
+                        heures * 60 + minutes < 23 * 60 + 59):  # check between 21h08 and 23h59
         mode = "HC"
     if (heures * 60 + minutes > 0) and (heures * 60 + minutes < 3 * 60 + 8):  # check between 00h00 and 03h08
         mode = "HC"
@@ -309,6 +333,7 @@ def teststring():
     liste2 = [index_hp, index_hc, mode]
 
     return liste2
+
 
 def testdb_insert(liste):
     nhp = liste[0]
@@ -351,16 +376,14 @@ def testdb_insert(liste):
 
 
 def testdb_dic_insert(liste):
-
-    ndayna = datetime.now().strftime("%A")          # day name string
-    nwdaynu = int(datetime.now().strftime("%w"))     # weekday number decimal
-    nhour = datetime.now().strftime("%H:%M")     # Hour:Minute string
-    ndate = datetime.now().strftime("%d-%m-%Y")     # day decimal
-    nweekn = int(datetime.now().strftime("%W"))     # week number
-    nyear = int(datetime.now().strftime("%Y"))     # week number
-    nmonth = int(datetime.now().strftime("%m"))     # month decimal
-    nday = int(datetime.now().strftime("%d"))     # day decimal
-
+    ndayna = datetime.now().strftime("%A")  # day name string
+    nwdaynu = int(datetime.now().strftime("%w"))  # weekday number decimal
+    nhour = datetime.now().strftime("%H:%M")  # Hour:Minute string
+    ndate = datetime.now().strftime("%d-%m-%Y")  # day decimal
+    nweekn = int(datetime.now().strftime("%W"))  # week number
+    nyear = int(datetime.now().strftime("%Y"))  # week number
+    nmonth = int(datetime.now().strftime("%m"))  # month decimal
+    nday = int(datetime.now().strftime("%d"))  # day decimal
 
     nhp = liste[0]
     nhc = liste[1]
@@ -420,7 +443,7 @@ def testdb_dic_insert(liste):
                 sqlquery = 'INSERT INTO Day (Year, Month, Day, \
                             Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC)\
                             VALUES(?,?,?,?,?,?,?,?)'
-                cur.execute(sqlquery, (nyear, nmonth,nday, nhp, nhc, 0, 0, 0))
+                cur.execute(sqlquery, (nyear, nmonth, nday, nhp, nhc, 0, 0, 0))
 
             else:
 
@@ -515,7 +538,7 @@ def testdb_dic_insert(liste):
                 count = cur.fetchone()[0]
                 cur.execute('SELECT * FROM Month WHERE rowid = %s' % count)
                 previous_data = cur.fetchone()
-                if  previous_data['Month'] == nmonth:
+                if previous_data['Month'] == nmonth:
                     nchp = nhp - previous_data['Index_HP']
                     nchc = nhc - previous_data['Index_HC']
                     nchphc = nchp + nchc
@@ -605,15 +628,14 @@ def database_update(liste):
     nhc = int(liste[1])
     nmode = str(liste[2])
 
-
-    ndayna = datetime.now().strftime("%A")          # day name string
-    nwdaynu = int(datetime.now().strftime("%w"))    # weekday number decimal
-    nhour = datetime.now().strftime("%H:%M")        # Hour:Minute string
-    ndate = datetime.now().strftime("%d-%m-%Y")     # day decimal
-    nweekn = int(datetime.now().strftime("%W"))     # week number
-    nyear = int(datetime.now().strftime("%Y"))      # week number
-    nmonth = int(datetime.now().strftime("%m"))     # month decimal
-    nday = int(datetime.now().strftime("%d"))       # day decimal
+    ndayna = datetime.now().strftime("%A")  # day name string
+    nwdaynu = int(datetime.now().strftime("%w"))  # weekday number decimal
+    nhour = datetime.now().strftime("%H:%M")  # Hour:Minute string
+    ndate = datetime.now().strftime("%d-%m-%Y")  # day decimal
+    nweekn = int(datetime.now().strftime("%W"))  # week number
+    nyear = int(datetime.now().strftime("%Y"))  # week number
+    nmonth = int(datetime.now().strftime("%m"))  # month decimal
+    nday = int(datetime.now().strftime("%d"))  # day decimal
 
     maxweek = 1
 
@@ -659,7 +681,7 @@ def database_update(liste):
                 sqlquery = 'INSERT INTO Day (Year, Month, Day, \
                             Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC)\
                             VALUES(?,?,?,?,?,?,?,?)'
-                cur.execute(sqlquery, (nyear, nmonth,nday, nhp, nhc, 0, 0, 0))
+                cur.execute(sqlquery, (nyear, nmonth, nday, nhp, nhc, 0, 0, 0))
 
             else:
 
@@ -754,7 +776,7 @@ def database_update(liste):
                 count = cur.fetchone()[0]
                 cur.execute('SELECT * FROM Month WHERE rowid = %s' % count)
                 previous_data = cur.fetchone()
-                if  previous_data['Month'] == nmonth:
+                if previous_data['Month'] == nmonth:
                     nchp = nhp - previous_data['Index_HP']
                     nchc = nhc - previous_data['Index_HC']
                     nchphc = nchp + nchc
@@ -795,6 +817,7 @@ def database_update(liste):
     except sqlite3.Error, e:
         print "Error %s:" % e.args[0]
 
+
 def plotly_test():
     """ Plotly test
     before using you must run he command below. This command create a credential json file
@@ -821,37 +844,19 @@ def plotly_test():
                 count = cur.fetchone()[0]
                 cur.execute('SELECT * FROM CurrentWeek WHERE rowid = %s' % count)
                 previous_data = cur.fetchone()
-
+                kwh_hp = 0.001572
+                kwh_hc = 0.001096
                 nhour = previous_data['Hour']
-                ndiffhp = previous_data['Diff_HP']
-                ndiffhc = previous_data['Diff_HC']
+                ndiffhp = previous_data['Diff_HP'] * kwh_hp
+                ndiffhc = previous_data['Diff_HC'] * kwh_hc
+                nresult = ndiffhp + ndiffhc
 
                 # Used for ignore the warning InsecurePlatformWarning in python 2.7.3
                 requests.packages.urllib3.disable_warnings()
                 tls.get_credentials_file()
 
-                trace1 = Bar(
-                    x=[nhour], y=[ndiffhp], name='Diff_HP'
-                )
-                trace2 = Bar(
-                    x=[nhour], y=[ndiffhc], name='Diff_HC'
-                )
-                data = Data([trace1, trace2])
-                layout = Layout(
-                    title='Teleinfo',
-                    autosize=False,
-                    width=300,
-                    height=300,
-                    margin=Margin(
-                        l=65,
-                        r=50,
-                        b=65,
-                        t=65
-                    ),
-                    barmode='stack'
-                )
-                fig = Figure(data=data, layout=layout)
-                py.plot(fig,fileopt='extend',auto_open=False)
+                data = Data([Bar(x=[nhour], y=[nresult], name='Centimes')])
+                py.plot(data, filename='teleinfo', fileopt='extend', auto_open=False)
 
         except sqlite3.Error, e:
             print "Error %s:" % e.args[0]
@@ -859,9 +864,8 @@ def plotly_test():
     except urllib2.URLError:
         exit()
 
-
 if __name__ == '__main__':
-
-    #maintest(sys.argv[1:])
+    database_update(sys.argv[1:])
     plotly_test()
+
 
