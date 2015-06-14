@@ -24,6 +24,7 @@ import warnings  # Used for the warning InsecurePlatformWarning in python 2.7.3
 import plotly
 import plotly.plotly as py
 import plotly.tools as tls
+import urllib2          # lib pour requettes internet
 import sqlite3
 import calendar
 import os.path  # lib pour test fichiers
@@ -113,26 +114,6 @@ def cvs_to_json():
         json.dump(row, jsonfile, indent=4)
         jsonfile.write(',\n')
     jsonfile.write('\b]\n')
-
-
-def plotly_test():
-    """ Plotly test
-    before using you must run he command below. This command create a credential json file
-    in your $HOME/.plotly directory.
-    plotly.tools.set_credentials_file(username='username', api_key='key', stream_ids=['id1', 'id2'])
-    :itype : none
-    :rtype : None
-    """
-    # Used for ignore the warning InsecurePlatformWarning in python 2.7.3
-    requests.packages.urllib3.disable_warnings()
-
-    credentials = tls.get_credentials_file()
-    trace0 = Scatter(x=[1, 2, 3, 4], y=[50, 15, 23, 17])
-    trace1 = Scatter(x=[1, 2, 3, 4], y=[161, 500, 511, 999])
-
-    data = Data([trace0, trace1])
-
-    unique_url = py.plot(data, filename='basic-line')
 
 
 def epoch_to_iso8601(epochtime):
@@ -814,17 +795,73 @@ def database_update(liste):
     except sqlite3.Error, e:
         print "Error %s:" % e.args[0]
 
+def plotly_test():
+    """ Plotly test
+    before using you must run he command below. This command create a credential json file
+    in your $HOME/.plotly directory.
+    plotly.tools.set_credentials_file(username='username', api_key='key', stream_ids=['id1', 'id2'])
+    :itype : none
+    :rtype : None
+    """
 
-def maintest(test):
+    try:
+        os.system("wget -q --delete-after www.google.fr")
+        _ = urllib2.urlopen('http://www.google.fr/', timeout=4)
 
-    print test
-    f = open('workfile.txt', 'w')
-    f.write(str(test))
-    f.close()
+        try:
+            conn = sqlite3.connect(DATABASE_NAME)
+
+            with conn:
+                # connect database in dictionary mode
+                conn.row_factory = sqlite3.Row
+                cur = conn.cursor()
+
+                # count number of row already inserted in table currentweek **************************************
+                cur.execute('SELECT Count() FROM %s' % 'CurrentWeek')
+                count = cur.fetchone()[0]
+                cur.execute('SELECT * FROM CurrentWeek WHERE rowid = %s' % count)
+                previous_data = cur.fetchone()
+
+                nhour = previous_data['Hour']
+                ndiffhp = previous_data['Diff_HP']
+                ndiffhc = previous_data['Diff_HC']
+
+                # Used for ignore the warning InsecurePlatformWarning in python 2.7.3
+                requests.packages.urllib3.disable_warnings()
+                tls.get_credentials_file()
+
+                trace1 = Bar(
+                    x=[nhour], y=[ndiffhp], name='Diff_HP'
+                )
+                trace2 = Bar(
+                    x=[nhour], y=[ndiffhc], name='Diff_HC'
+                )
+                data = Data([trace1, trace2])
+                layout = Layout(
+                    title='Teleinfo',
+                    autosize=False,
+                    width=300,
+                    height=300,
+                    margin=Margin(
+                        l=65,
+                        r=50,
+                        b=65,
+                        t=65
+                    ),
+                    barmode='stack'
+                )
+                fig = Figure(data=data, layout=layout)
+                py.plot(fig,fileopt='extend',auto_open=False)
+
+        except sqlite3.Error, e:
+            print "Error %s:" % e.args[0]
+
+    except urllib2.URLError:
+        exit()
 
 
 if __name__ == '__main__':
 
-    maintest(sys.argv[1:])
-
+    #maintest(sys.argv[1:])
+    plotly_test()
 
