@@ -574,59 +574,43 @@ def database_update(liste):
         print "Error %s:" % e.args[0]
 
 
+def filldb():
+
+    conn = sqlite3.connect(DATABASE_NAME)
+
+    with conn:
+        # connect database in dictionary mode
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+
+        # Search the first rowid with uploaded = 0   ****************
+        cur.execute('SELECT Count() FROM %s' % 'CurrentWeek')
+        count = cur.fetchone()[0]
+        for x in range(1, count+1):
+            cur.execute('UPDATE  CurrentWeek SET UPLOADED = %s WHERE rowid = %s' % (0, x))
+
+        cur.execute('SELECT Count() FROM %s' % 'Day')
+        count = cur.fetchone()[0]
+        for x in range(1, count+1):
+            cur.execute('UPDATE  Day SET UPLOADED = %s WHERE rowid = %s' % (0, x))
+
+        cur.execute('SELECT Count() FROM %s' % 'Week')
+        count = cur.fetchone()[0]
+        for x in range(1, count+1):
+            cur.execute('UPDATE  Week SET UPLOADED = %s WHERE rowid = %s' % (0, x))
+
+        cur.execute('SELECT Count() FROM %s' % 'Month')
+        count = cur.fetchone()[0]
+        for x in range(1, count+1):
+            cur.execute('UPDATE  Month SET UPLOADED = %s WHERE rowid = %s' % (0, x))
+
+        cur.execute('SELECT Count() FROM %s' % 'Year')
+        count = cur.fetchone()[0]
+        for x in range(1, count+1):
+            cur.execute('UPDATE  Year SET UPLOADED = %s WHERE rowid = %s' % (0, x))
+
+
 def upload_to_plotly():
-    """ Plotly test
-    before using you must run he command below. This command create a credential json file
-    in your $HOME/.plotly directory.
-    plotly.tools.set_credentials_file(username='username', api_key='key', stream_ids=['id1', 'id2'])
-    :itype : none
-    :rtype : None
-    """
-    global TESTMODE
-
-    try:
-        if not TESTMODE:
-            os.system("wget -q --delete-after www.google.fr")
-            _ = urllib2.urlopen('http://www.google.fr/', timeout=4)
-        else:
-            pass
-
-        try:
-            conn = sqlite3.connect(DATABASE_NAME)
-
-            with conn:
-                # connect database in dictionary mode
-                conn.row_factory = sqlite3.Row
-                cur = conn.cursor()
-
-                # count number of row already inserted in table currentweek ***********
-                cur.execute('SELECT Count() FROM %s' % 'CurrentWeek')
-                count = cur.fetchone()[0]
-                cur.execute('SELECT * FROM CurrentWeek WHERE rowid = %s' % count)
-                previous_data = cur.fetchone()
-
-                nhour = previous_data['Hour']
-                ndiffhp = previous_data['Diff_HP']
-                ndiffhc = previous_data['Diff_HC']
-                trace1 = Bar(x=nhour, y=ndiffhp, name='HP')
-                trace2 = Bar(x=nhour, y=ndiffhc, name='HC')
-                data = Data([trace1, trace2])
-                layout = Layout(barmode='stack')
-                fig = Figure(data=data, layout=layout)
-
-                # Used for ignore the warning InsecurePlatformWarning in python 2.7.3
-                requests.packages.urllib3.disable_warnings()
-                tls.get_credentials_file()
-                py.plot(fig, filename='test', fileopt='extend', auto_open=False)
-                print "data uploaded to plotly"
-
-        except sqlite3.Error, e:
-            print "Error %s:" % e.args[0]
-
-    except urllib2.URLError:
-        exit()
-
-def testlist():
 
     upl = 0
     conn = sqlite3.connect(DATABASE_NAME)
@@ -659,34 +643,54 @@ def testlist():
 
         # construct the differents list for stacked bar graph
         if count_start:
-            y1range = []
-            y2range = []
+            hp_range = []
+            hc_range = []
             x1range = []
 
+            # code for Diff_HP Diff_HC
             for count in range(count_start, count_end+1):
                 cur.execute('SELECT * FROM CurrentWeek WHERE rowid = %s' % count)
                 data = cur.fetchone()
                 x1range.append(str(data['Hour']))
-                y1range.append(int(data['Diff_HP']))
-                y2range.append(int(data['Diff_HC']))
-                cur.execute('UPDATE  CurrentWeek SET UPLOADED = %s WHERE rowid = %s' % (1, count))
+                hp_range.append(data['Diff_HP'])
+                hc_range.append(data['Diff_HC'])
+                #cur.execute('UPDATE  CurrentWeek SET UPLOADED = %s WHERE rowid = %s' % (1, count))
 
             # upload data list to plotly
-            trace1 = Bar(x=x1range, y=y1range, name='HP')
-            trace2 = Bar(x=x1range, y=y2range, name='HC')
+            trace1 = Bar(x=x1range, y=hp_range, name='HP')
+            trace2 = Bar(x=x1range, y=hc_range, name='HC')
             data = Data([trace1, trace2])
             layout = Layout(barmode='stack')
             fig = Figure(data=data, layout=layout)
             requests.packages.urllib3.disable_warnings()
             tls.get_credentials_file()
             py.plot(fig, filename='testlistooo', fileopt='extend', auto_open=False)
-            print "%i data uploaded " % (count_end-count_start+1)
+
+            # code for Cumul_HP Cumul_HC
+            for count in range(count_start, count_end+1):
+                cur.execute('SELECT * FROM CurrentWeek WHERE rowid = %s' % count)
+                data = cur.fetchone()
+                x1range.append(str(data['Hour']))
+                hp_range.append(data['Cumul_HP'])
+                hc_range.append(data['Cumul_HC'])
+                cur.execute('UPDATE  CurrentWeek SET UPLOADED = %s WHERE rowid = %s' % (1, count))
+
+            # upload data list to plotly
+            trace1 = Bar(x=x1range, y=hp_range, name='HP')
+            trace2 = Bar(x=x1range, y=hc_range, name='HC')
+            data = Data([trace1, trace2])
+            layout = Layout(barmode='stack')
+            fig = Figure(data=data, layout=layout)
+            requests.packages.urllib3.disable_warnings()
+            tls.get_credentials_file()
+            py.plot(fig, filename='testlistuuu', fileopt='extend', auto_open=False)
 
 
 
 if __name__ == '__main__':
 
-    testlist()
+    filldb()
+    upload_to_plotly()
 
     '''database_update(sys.argv[1:])
     upload_plotly()
