@@ -18,10 +18,7 @@ utilise un fichier Json du format suivant pour la config
 import csv  # lib pour fichiers csv
 import json
 import random
-import sys
 import requests  # Used for the warning InsecurePlatformWarning in python 2.7.3
-import warnings  # Used for the warning InsecurePlatformWarning in python 2.7.3
-import plotly
 import plotly.plotly as py
 import plotly.tools as tls
 import sqlite3
@@ -30,16 +27,16 @@ import urllib2  # lib pour requettes internet
 import os.path  # lib pour test fichiers
 from plotly.graph_objs import *
 from cloudscope import log_error
-from cloudscope import log_event
 from cloudscope import oauth2_build
 from datetime import datetime
-from time import gmtime, localtime, strftime
+from time import localtime, strftime
 
 DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive '
 GMAIL_SCOPE = 'https://mail.google.com/'
 SHEET_SCOPE = 'https://spreadsheets.google.com/feeds'
-DATABASE_NAME = '/root/python/database.db'
-#DATABASE_NAME = 'database.db'
+#DATABASE_NAME = '/root/python/database.db'
+DATABASE_NAME = 'database.db'
+TESTMODE = 1
 index_hp = 5451113
 index_hc = 5323021
 epochdate = 1022401000
@@ -115,25 +112,6 @@ def cvs_to_json():
         jsonfile.write(',\n')
     jsonfile.write('\b]\n')
 
-
-def plotly_test():
-    """ Plotly test
-    before using you must run he command below. This command create a credential json file
-    in your $HOME/.plotly directory.
-    plotly.tools.set_credentials_file(username='username', api_key='key', stream_ids=['id1', 'id2'])
-    :itype : none
-    :rtype : None
-    """
-    # Used for ignore the warning InsecurePlatformWarning in python 2.7.3
-    requests.packages.urllib3.disable_warnings()
-
-    credentials = tls.get_credentials_file()
-    trace0 = Scatter(x=[1, 2, 3, 4], y=[50, 15, 23, 17])
-    trace1 = Scatter(x=[1, 2, 3, 4], y=[161, 500, 511, 999])
-
-    data = Data([trace0, trace1])
-
-    unique_url = py.plot(data, filename='basic-line')
 
 
 def epoch_to_iso8601(epochtime):
@@ -324,260 +302,16 @@ def teststring():
         mode = "HC"
 
     if mode == "HP":
-        index_hp += 1  # abs(random.randint(1, 100))  # increment HP during HP time
+        index_hp += abs(random.randint(1, 100))  # increment HP during HP time
     if mode == "HC":
-        index_hc += 1  # abs(random.randint(1, 100))  # increment HC during HC time
+        index_hc += abs(random.randint(1, 100))  # increment HC during HC time
 
     liste1 = [index_hp, index_hc, mode, datetime_iso8601]
     print liste1
     liste2 = [index_hp, index_hc, mode]
 
-    return liste2
+    return liste1
 
-
-def testdb_insert(liste):
-    nhp = liste[0]
-    nhc = liste[1]
-    nMode = liste[2]
-    nTimestamp = liste[3]
-    nEpoch = iso8601_to_epoch(nTimestamp)
-    nDay_Name = epoch_to_weekday_name(nEpoch)
-    nDate = epoch_to_date(nEpoch)
-    nDay_Number = epoch_to_weekday_number(nEpoch)
-    nHour = epoch_to_hourminute(nEpoch)
-    nTable = 'CurrentWeek'
-
-    try:
-        conn = sqlite3.connect(DATABASE_NAME)
-
-        with conn:
-
-            cur = conn.cursor()
-            rowsQuery = 'SELECT Count() FROM %s' % nTable
-            cur.execute(rowsQuery)
-            count = cur.fetchone()[0]
-            print " last rowid is %s" % count
-
-            if count != 0:
-                rowsQuery = 'SELECT * FROM Week WHERE rowid = %s' % count
-                cur.execute(rowsQuery)
-                pdata = cur.fetchone()
-                php = pdata[3]
-                phc = pdata[4]
-                print "Data Tuple  from rowid %s = %s" % (count, pdata)
-
-            rowsQuery = 'INSERT INTO %s (Year,Week) VALUES(?,?)' % nTable
-            cur.execute(rowsQuery, (2015, 41))
-            lid = cur.lastrowid
-            print " new rowid is %s" % lid
-
-    except sqlite3.Error, e:
-        print "Error %s:" % e.args[0]
-
-
-def testdb_dic_insert(liste):
-    ndayna = datetime.now().strftime("%A")  # day name string
-    nwdaynu = int(datetime.now().strftime("%w"))  # weekday number decimal
-    nhour = datetime.now().strftime("%H:%M")  # Hour:Minute string
-    ndate = datetime.now().strftime("%d-%m-%Y")  # day decimal
-    nweekn = int(datetime.now().strftime("%W"))  # week number
-    nyear = int(datetime.now().strftime("%Y"))  # week number
-    nmonth = int(datetime.now().strftime("%m"))  # month decimal
-    nday = int(datetime.now().strftime("%d"))  # day decimal
-
-    nhp = liste[0]
-    nhc = liste[1]
-    nmode = liste[2]
-    '''
-    ntimestamp = liste[3]
-    nepoch = iso8601_to_epoch(ntimestamp)
-
-    ndayna = epoch_to_weekday_name(nepoch)
-    nwdaynu = epoch_to_weekday_number(nepoch)
-    nhour = epoch_to_hourminute(nepoch)
-    ndate = epoch_to_date(nepoch)
-    nweekn = epoch_to_week_number(nepoch)
-    nyear = epoch_to_year(nepoch)
-    nmonth = epoch_to_month(nepoch)
-    nday = epoch_to_day(nepoch)
-    '''
-
-    maxweek = 1
-
-    try:
-        conn = sqlite3.connect(DATABASE_NAME)
-
-        with conn:
-            # connect database in dictionary mode
-            conn.row_factory = sqlite3.Row
-            cur = conn.cursor()
-
-            # count number of row already inserted in table currentweek **************************************
-            cur.execute('SELECT Count() FROM %s' % 'CurrentWeek')
-            count = cur.fetchone()[0]
-
-            if count == 0:  # init case
-
-                sqlquery = 'INSERT INTO CurrentWeek (Year, Month, Day, Week_Number, WeekDay_Number, Day_Name, Date,Hour,\
-                            Mode, Index_HP, Index_HC, Diff_HP, Diff_HC, Diff_HPHC , \
-                            Cumul_HP, Cumul_HC, Cumul_HPHC)\
-                            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
-                cur.execute(sqlquery, (nyear, nmonth, nday, nweekn, nwdaynu, ndayna, ndate,
-                                       nhour, nmode, nhp, nhc, 0, 0, 0, 0, 0, 0))
-
-                sqlquery = 'INSERT INTO Week (Year, Week_Number,\
-                            Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC)\
-                            VALUES(?,?,?,?,?,?,?)'
-                cur.execute(sqlquery, (nyear, nweekn, nhp, nhc, 0, 0, 0))
-
-                sqlquery = 'INSERT INTO Month (Year, Month,\
-                            Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC)\
-                            VALUES(?,?,?,?,?,?,?)'
-                cur.execute(sqlquery, (nyear, nmonth, nhp, nhc, 0, 0, 0))
-
-                sqlquery = 'INSERT INTO Year (Year, \
-                            Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC)\
-                            VALUES(?,?,?,?,?,?)'
-                cur.execute(sqlquery, (nyear, nhp, nhc, 0, 0, 0))
-
-                sqlquery = 'INSERT INTO Day (Year, Month, Day, \
-                            Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC)\
-                            VALUES(?,?,?,?,?,?,?,?)'
-                cur.execute(sqlquery, (nyear, nmonth, nday, nhp, nhc, 0, 0, 0))
-
-            else:
-
-                # ############################### CurrentWeek PROCESSING    ##############################################
-
-                sqlquery = 'INSERT INTO CurrentWeek (Year,Month,Day,Week_Number,WeekDay_Number,Day_Name,Date,Hour,\
-                        Mode, Index_HP, Index_HC, Diff_HP, Diff_HC, Diff_HPHC, Cumul_HP, Cumul_HC, Cumul_HPHC)\
-                        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
-
-                cur.execute('SELECT * FROM CurrentWeek WHERE rowid = %s' % count)
-                previous_data = cur.fetchone()
-
-                if previous_data['WeekDay_Number'] == nwdaynu:
-                    # calculate the differencies if it is the same day
-                    ndhp = nhp - previous_data['Index_HP']
-                    ndhc = nhc - previous_data['Index_HC']
-                    ndhphc = ndhp + ndhc
-                    nchp = previous_data['Cumul_HP'] + ndhp
-                    nchc = previous_data['Cumul_HC'] + ndhc
-                    nchphc = nchp + nchc
-                    cur.execute(sqlquery, (nyear, nmonth, nday, nweekn, nwdaynu, ndayna, ndate, nhour,
-                                           nmode, nhp, nhc, ndhp, ndhc, ndhphc, nchp, nchc, nchphc))
-
-                else:
-                    # new day
-                    ndhp = nhp - previous_data['Index_HP']
-                    ndhc = nhc - previous_data['Index_HC']
-                    ndhphc = ndhp + ndhc
-                    nchp = ndhp
-                    nchc = ndhc
-                    nchphc = nchp + nchc
-
-                    cur.execute(sqlquery, (nyear, nmonth, nday, nweekn, nwdaynu, ndayna, ndate,
-                                           nhour, nmode, nhp, nhc, ndhp, ndhc, ndhphc, nchp, nchc, nchphc))
-
-                # ###############################  Day PROCESSING    ##############################################
-                cur.execute('SELECT Count() FROM Day')
-                count = cur.fetchone()[0]
-                cur.execute('SELECT * FROM Day WHERE rowid = %s' % count)
-                previous_data = cur.fetchone()
-
-                if previous_data['Day'] == nday:
-                    nchp = nhp - previous_data['Index_HP']
-                    nchc = nhc - previous_data['Index_HC']
-                    nchphc = nchp + nchc
-                    cur.execute('UPDATE  Day SET CUMUL_HP = %s WHERE rowid = %s' % (nchp, count))
-                    cur.execute('UPDATE  Day SET CUMUL_HC = %s WHERE rowid = %s' % (nchc, count))
-                    cur.execute('UPDATE  Day SET CUMUL_HPHC = %s WHERE rowid = %s' % (nchphc, count))
-                else:
-                    # new Day
-                    nchp = previous_data['Index_HP'] + previous_data['Cumul_HP']
-                    nchc = previous_data['Index_HC'] + previous_data['Cumul_HC']
-                    sqlquery = 'INSERT INTO Day (Year, Month, Day, \
-                                Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC)\
-                                VALUES(?,?,?,?,?,?,?,?)'
-                    cur.execute(sqlquery, (nyear, nmonth, nday, nchp, nchc, 0, 0, 0))
-
-                # ###############################  Week PROCESSING    ##############################################
-                cur.execute('SELECT Count() FROM Week')
-                count = cur.fetchone()[0]
-                cur.execute('SELECT * FROM Week WHERE rowid = %s' % count)
-                previous_data = cur.fetchone()
-
-                if previous_data['Week_Number'] == nweekn:
-                    nchp = nhp - previous_data['Index_HP']
-                    nchc = nhc - previous_data['Index_HC']
-                    nchphc = nchp + nchc
-                    cur.execute('UPDATE  Week SET CUMUL_HP = %s WHERE rowid = %s' % (nchp, count))
-                    cur.execute('UPDATE  Week SET CUMUL_HC = %s WHERE rowid = %s' % (nchc, count))
-                    cur.execute('UPDATE  Week SET CUMUL_HPHC = %s WHERE rowid = %s' % (nchphc, count))
-                else:
-                    # new week
-                    nchp = previous_data['Index_HP'] + previous_data['Cumul_HP']
-                    nchc = previous_data['Index_HC'] + previous_data['Cumul_HC']
-                    sqlquery = 'INSERT INTO Week (Year, Week_Number,\
-                                Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC)\
-                                VALUES(?,?,?,?,?,?,?)'
-                    cur.execute(sqlquery, (nyear, nweekn, nchp, nchc, 0, 0, 0))
-
-                    # ----------------------------------------------------------------------------
-                    #     Remove Week in the CurrentWeek table
-                    # ----------------------------------------------------------------------------
-                    if count > maxweek:
-                        cur.execute('SELECT * FROM Week WHERE rowid = %s' % count)
-                        last_week = cur.fetchone()['Week_Number'] - maxweek
-                        cur.execute('DELETE FROM CurrentWeek WHERE Week_Number = %s' % last_week)
-                        cur.execute('VACUUM')  # #### VERY IMPORTANT ##### #
-                        pass
-
-                # ###############################  Month PROCESSING    ##############################################
-                cur.execute('SELECT Count() FROM Month')
-                count = cur.fetchone()[0]
-                cur.execute('SELECT * FROM Month WHERE rowid = %s' % count)
-                previous_data = cur.fetchone()
-                if previous_data['Month'] == nmonth:
-                    nchp = nhp - previous_data['Index_HP']
-                    nchc = nhc - previous_data['Index_HC']
-                    nchphc = nchp + nchc
-                    cur.execute('UPDATE  Month SET CUMUL_HP = %s WHERE rowid = %s' % (nchp, count))
-                    cur.execute('UPDATE  Month SET CUMUL_HC = %s WHERE rowid = %s' % (nchc, count))
-                    cur.execute('UPDATE  Month SET CUMUL_HPHC = %s WHERE rowid = %s' % (nchphc, count))
-                else:
-                    # new month
-                    nchp = previous_data['Index_HP'] + previous_data['Cumul_HP']
-                    nchc = previous_data['Index_HC'] + previous_data['Cumul_HC']
-                    sqlquery = 'INSERT INTO Month (Year, Month,\
-                                Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC)\
-                                VALUES(?,?,?,?,?,?,?)'
-                    cur.execute(sqlquery, (nyear, nmonth, nchp, nchc, 0, 0, 0))
-
-                # ###############################  Year PROCESSING    ##############################################
-                cur.execute('SELECT Count() FROM Year')
-                count = cur.fetchone()[0]
-                cur.execute('SELECT * FROM Year WHERE rowid = %s' % count)
-                previous_data = cur.fetchone()
-
-                if previous_data['Year'] == nyear:
-                    nchp = nhp - previous_data['Index_HP']
-                    nchc = nhc - previous_data['Index_HC']
-                    nchphc = nchp + nchc
-                    cur.execute('UPDATE  Year SET CUMUL_HP = %s WHERE rowid = %s' % (nchp, count))
-                    cur.execute('UPDATE  Year SET CUMUL_HC = %s WHERE rowid = %s' % (nchc, count))
-                    cur.execute('UPDATE  Year SET CUMUL_HPHC = %s WHERE rowid = %s' % (nchphc, count))
-                else:
-                    # new year
-                    nchp = previous_data['Index_HP'] + previous_data['Cumul_HP']
-                    nchc = previous_data['Index_HC'] + previous_data['Cumul_HC']
-                    sqlquery = 'INSERT INTO Year (Year, \
-                                Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC)\
-                                VALUES(?,?,?,?,?,?)'
-                    cur.execute(sqlquery, (nyear, nchp, nchc, 0, 0, 0))
-
-    except sqlite3.Error, e:
-        print "Error %s:" % e.args[0]
 
 
 def create_database():
@@ -598,20 +332,20 @@ def create_database():
                         Day_Name TEXT, Date TEXT, Hour TEXT, \
                         Mode TEXT, Index_HP INTEGER, Index_HC INTEGER, \
                         Diff_HP INTEGER, Diff_HC INTEGER, Diff_HPHC INTEGER, \
-                        Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER, Uploaded INTEGER);')
+                        Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER, UPLOADED INTEGER);')
             # create a table for the Days
             cur.execute('CREATE TABLE Day(Year INTEGER, Month INTEGER, Day INTEGER, \
-                        Index_HP INTEGER, Index_HC INTEGER,Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER, Uploaded INTEGER);')
+                        Index_HP INTEGER, Index_HC INTEGER,Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER, UPLOADED INTEGER);')
             # create a table for the week
             cur.execute('CREATE TABLE Week(Year INTEGER, Week_Number INTEGER, \
                          Index_HP INTEGER, Index_HC INTEGER,\
-                         Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER, Uploaded INTEGER);')
+                         Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER, UPLOADED INTEGER);')
             # create a table for the Month
             cur.execute('CREATE TABLE Month(Year INTEGER, Month INTEGER, \
-                        Index_HP INTEGER, Index_HC INTEGER, Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER, Uploaded INTEGER);')
+                        Index_HP INTEGER, Index_HC INTEGER, Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER, UPLOADED INTEGER);')
             # create a table for the Year
             cur.execute('CREATE TABLE Year(Year INTEGER, \
-                        Index_HP INTEGER, Index_HC INTEGER, Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER, Uploaded INTEGER);')
+                        Index_HP INTEGER, Index_HC INTEGER, Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER, UPLOADED INTEGER);')
 
     except sqlite3.Error, e:
         print "Error %s:" % e.args[0]
@@ -623,19 +357,37 @@ def database_update(liste):
     :param liste: index_HP Index_HC Mode)
     :return:    None
     """
+    global TESTMODE
 
-    nhp = int(liste[0])
-    nhc = int(liste[1])
-    nmode = str(liste[2])
+    if TESTMODE == 1:
 
-    ndayna = datetime.now().strftime("%A")  # day name string
-    nwdaynu = int(datetime.now().strftime("%w"))  # weekday number decimal
-    nhour = datetime.now().strftime("%H:%M")  # Hour:Minute string
-    ndate = datetime.now().strftime("%d-%m-%Y")  # day decimal
-    nweekn = int(datetime.now().strftime("%W"))  # week number
-    nyear = int(datetime.now().strftime("%Y"))  # week number
-    nmonth = int(datetime.now().strftime("%m"))  # month decimal
-    nday = int(datetime.now().strftime("%d"))  # day decimal
+        nhp = liste[0]
+        nhc = liste[1]
+        nmode = liste[2]
+        ntimestamp = liste[3]
+        nepoch = iso8601_to_epoch(ntimestamp)
+        ndayna = epoch_to_weekday_name(nepoch)
+        nwdaynu = epoch_to_weekday_number(nepoch)
+        nhour = epoch_to_hourminute(nepoch)
+        ndate = epoch_to_date(nepoch)
+        nweekn = epoch_to_week_number(nepoch)
+        nyear = epoch_to_year(nepoch)
+        nmonth = epoch_to_month(nepoch)
+        nday = epoch_to_day(nepoch)
+
+    else:
+
+        nhp = int(liste[0])
+        nhc = int(liste[1])
+        nmode = str(liste[2])
+        ndayna = datetime.now().strftime("%A")  # day name string
+        nwdaynu = int(datetime.now().strftime("%w"))  # weekday number decimal
+        nhour = datetime.now().strftime("%H:%M")  # Hour:Minute string
+        ndate = datetime.now().strftime("%d-%m-%Y")  # day decimal
+        nweekn = int(datetime.now().strftime("%W"))  # week number
+        nyear = int(datetime.now().strftime("%Y"))  # week number
+        nmonth = int(datetime.now().strftime("%m"))  # month decimal
+        nday = int(datetime.now().strftime("%d"))  # day decimal
 
     maxweek = 1
 
@@ -658,38 +410,38 @@ def database_update(liste):
 
                 sqlquery = 'INSERT INTO CurrentWeek (Year, Month, Day, Week_Number, WeekDay_Number, Day_Name, Date,Hour,\
                             Mode, Index_HP, Index_HC, Diff_HP, Diff_HC, Diff_HPHC , \
-                            Cumul_HP, Cumul_HC, Cumul_HPHC)\
-                            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
+                            Cumul_HP, Cumul_HC, Cumul_HPHC, UPLOADED)\
+                            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
                 cur.execute(sqlquery, (nyear, nmonth, nday, nweekn, nwdaynu, ndayna, ndate,
-                                       nhour, nmode, nhp, nhc, 0, 0, 0, 0, 0, 0))
+                                       nhour, nmode, nhp, nhc, 0, 0, 0, 0, 0, 0, 0))
 
                 sqlquery = 'INSERT INTO Week (Year, Week_Number,\
-                            Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC)\
-                            VALUES(?,?,?,?,?,?,?)'
-                cur.execute(sqlquery, (nyear, nweekn, nhp, nhc, 0, 0, 0))
+                            Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC, UPLOADED)\
+                            VALUES(?,?,?,?,?,?,?,?)'
+                cur.execute(sqlquery, (nyear, nweekn, nhp, nhc, 0, 0, 0, 0))
 
                 sqlquery = 'INSERT INTO Month (Year, Month,\
-                            Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC)\
-                            VALUES(?,?,?,?,?,?,?)'
-                cur.execute(sqlquery, (nyear, nmonth, nhp, nhc, 0, 0, 0))
+                            Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC, UPLOADED)\
+                            VALUES(?,?,?,?,?,?,?,?)'
+                cur.execute(sqlquery, (nyear, nmonth, nhp, nhc, 0, 0, 0, 0))
 
                 sqlquery = 'INSERT INTO Year (Year, \
-                            Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC)\
-                            VALUES(?,?,?,?,?,?)'
-                cur.execute(sqlquery, (nyear, nhp, nhc, 0, 0, 0))
+                            Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC, UPLOADED)\
+                            VALUES(?,?,?,?,?,?,?)'
+                cur.execute(sqlquery, (nyear, nhp, nhc, 0, 0, 0, 0))
 
                 sqlquery = 'INSERT INTO Day (Year, Month, Day, \
-                            Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC)\
-                            VALUES(?,?,?,?,?,?,?,?)'
-                cur.execute(sqlquery, (nyear, nmonth, nday, nhp, nhc, 0, 0, 0))
+                            Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC, UPLOADED)\
+                            VALUES(?,?,?,?,?,?,?,?,?)'
+                cur.execute(sqlquery, (nyear, nmonth, nday, nhp, nhc, 0, 0, 0, 0))
 
             else:
 
                 # ############################### CurrentWeek PROCESSING    ##############################################
 
                 sqlquery = 'INSERT INTO CurrentWeek (Year,Month,Day,Week_Number,WeekDay_Number,Day_Name,Date,Hour,\
-                        Mode, Index_HP, Index_HC, Diff_HP, Diff_HC, Diff_HPHC, Cumul_HP, Cumul_HC, Cumul_HPHC)\
-                        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
+                        Mode, Index_HP, Index_HC, Diff_HP, Diff_HC, Diff_HPHC, Cumul_HP, Cumul_HC, Cumul_HPHC, UPLOADED)\
+                        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
 
                 cur.execute('SELECT * FROM CurrentWeek WHERE rowid = %s' % count)
                 previous_data = cur.fetchone()
@@ -703,7 +455,7 @@ def database_update(liste):
                     nchc = previous_data['Cumul_HC'] + ndhc
                     nchphc = nchp + nchc
                     cur.execute(sqlquery, (nyear, nmonth, nday, nweekn, nwdaynu, ndayna, ndate, nhour,
-                                           nmode, nhp, nhc, ndhp, ndhc, ndhphc, nchp, nchc, nchphc))
+                                           nmode, nhp, nhc, ndhp, ndhc, ndhphc, nchp, nchc, nchphc, 0))
 
                 else:
                     # new day
@@ -715,7 +467,7 @@ def database_update(liste):
                     nchphc = nchp + nchc
 
                     cur.execute(sqlquery, (nyear, nmonth, nday, nweekn, nwdaynu, ndayna, ndate,
-                                           nhour, nmode, nhp, nhc, ndhp, ndhc, ndhphc, nchp, nchc, nchphc))
+                                           nhour, nmode, nhp, nhc, ndhp, ndhc, ndhphc, nchp, nchc, nchphc, 0))
 
                 # ###############################  Day PROCESSING    ##############################################
                 cur.execute('SELECT Count() FROM Day')
@@ -730,14 +482,15 @@ def database_update(liste):
                     cur.execute('UPDATE  Day SET CUMUL_HP = %s WHERE rowid = %s' % (nchp, count))
                     cur.execute('UPDATE  Day SET CUMUL_HC = %s WHERE rowid = %s' % (nchc, count))
                     cur.execute('UPDATE  Day SET CUMUL_HPHC = %s WHERE rowid = %s' % (nchphc, count))
+                    cur.execute('UPDATE  Day SET UPLOADED = %s WHERE rowid = %s' % (0, count))
                 else:
                     # new Day
                     nchp = previous_data['Index_HP'] + previous_data['Cumul_HP']
                     nchc = previous_data['Index_HC'] + previous_data['Cumul_HC']
                     sqlquery = 'INSERT INTO Day (Year, Month, Day, \
-                                Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC)\
-                                VALUES(?,?,?,?,?,?,?,?)'
-                    cur.execute(sqlquery, (nyear, nmonth, nday, nchp, nchc, 0, 0, 0))
+                                Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC, UPLOADED)\
+                                VALUES(?,?,?,?,?,?,?,?,?)'
+                    cur.execute(sqlquery, (nyear, nmonth, nday, nchp, nchc, 0, 0, 0, 0))
 
                 # ###############################  Week PROCESSING    ##############################################
                 cur.execute('SELECT Count() FROM Week')
@@ -752,14 +505,15 @@ def database_update(liste):
                     cur.execute('UPDATE  Week SET CUMUL_HP = %s WHERE rowid = %s' % (nchp, count))
                     cur.execute('UPDATE  Week SET CUMUL_HC = %s WHERE rowid = %s' % (nchc, count))
                     cur.execute('UPDATE  Week SET CUMUL_HPHC = %s WHERE rowid = %s' % (nchphc, count))
+                    cur.execute('UPDATE  Week SET UPLOADED = %s WHERE rowid = %s' % (0, count))
                 else:
                     # new week
                     nchp = previous_data['Index_HP'] + previous_data['Cumul_HP']
                     nchc = previous_data['Index_HC'] + previous_data['Cumul_HC']
                     sqlquery = 'INSERT INTO Week (Year, Week_Number,\
-                                Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC)\
-                                VALUES(?,?,?,?,?,?,?)'
-                    cur.execute(sqlquery, (nyear, nweekn, nchp, nchc, 0, 0, 0))
+                                Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC, UPLOADED)\
+                                VALUES(?,?,?,?,?,?,?,?)'
+                    cur.execute(sqlquery, (nyear, nweekn, nchp, nchc, 0, 0, 0, 0))
 
                     # ----------------------------------------------------------------------------
                     #     Remove Week in the CurrentWeek table
@@ -783,14 +537,15 @@ def database_update(liste):
                     cur.execute('UPDATE  Month SET CUMUL_HP = %s WHERE rowid = %s' % (nchp, count))
                     cur.execute('UPDATE  Month SET CUMUL_HC = %s WHERE rowid = %s' % (nchc, count))
                     cur.execute('UPDATE  Month SET CUMUL_HPHC = %s WHERE rowid = %s' % (nchphc, count))
+                    cur.execute('UPDATE  Month SET UPLOADED = %s WHERE rowid = %s' % (0, count))
                 else:
                     # new month
                     nchp = previous_data['Index_HP'] + previous_data['Cumul_HP']
                     nchc = previous_data['Index_HC'] + previous_data['Cumul_HC']
                     sqlquery = 'INSERT INTO Month (Year, Month,\
-                                Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC)\
-                                VALUES(?,?,?,?,?,?,?)'
-                    cur.execute(sqlquery, (nyear, nmonth, nchp, nchc, 0, 0, 0))
+                                Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC, UPLOADED)\
+                                VALUES(?,?,?,?,?,?,?,?)'
+                    cur.execute(sqlquery, (nyear, nmonth, nchp, nchc, 0, 0, 0, 0))
 
                 # ###############################  Year PROCESSING    ##############################################
                 cur.execute('SELECT Count() FROM Year')
@@ -805,20 +560,21 @@ def database_update(liste):
                     cur.execute('UPDATE  Year SET CUMUL_HP = %s WHERE rowid = %s' % (nchp, count))
                     cur.execute('UPDATE  Year SET CUMUL_HC = %s WHERE rowid = %s' % (nchc, count))
                     cur.execute('UPDATE  Year SET CUMUL_HPHC = %s WHERE rowid = %s' % (nchphc, count))
+                    cur.execute('UPDATE  Year SET UPLOADED = %s WHERE rowid = %s' % (0, count))
                 else:
                     # new year
                     nchp = previous_data['Index_HP'] + previous_data['Cumul_HP']
                     nchc = previous_data['Index_HC'] + previous_data['Cumul_HC']
                     sqlquery = 'INSERT INTO Year (Year, \
-                                Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC)\
-                                VALUES(?,?,?,?,?,?)'
-                    cur.execute(sqlquery, (nyear, nchp, nchc, 0, 0, 0))
+                                Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC, UPLOADED)\
+                                VALUES(?,?,?,?,?,?,?)'
+                    cur.execute(sqlquery, (nyear, nchp, nchc, 0, 0, 0, 0))
 
     except sqlite3.Error, e:
         print "Error %s:" % e.args[0]
 
 
-def plotly_test():
+def upload_to_plotly():
     """ Plotly test
     before using you must run he command below. This command create a credential json file
     in your $HOME/.plotly directory.
@@ -826,10 +582,14 @@ def plotly_test():
     :itype : none
     :rtype : None
     """
+    global TESTMODE
 
     try:
-        os.system("wget -q --delete-after www.google.fr")
-        _ = urllib2.urlopen('http://www.google.fr/', timeout=4)
+        if not TESTMODE:
+            os.system("wget -q --delete-after www.google.fr")
+            _ = urllib2.urlopen('http://www.google.fr/', timeout=4)
+        else:
+            pass
 
         try:
             conn = sqlite3.connect(DATABASE_NAME)
@@ -839,24 +599,26 @@ def plotly_test():
                 conn.row_factory = sqlite3.Row
                 cur = conn.cursor()
 
-                # count number of row already inserted in table currentweek **************************************
+                # count number of row already inserted in table currentweek ***********
                 cur.execute('SELECT Count() FROM %s' % 'CurrentWeek')
                 count = cur.fetchone()[0]
                 cur.execute('SELECT * FROM CurrentWeek WHERE rowid = %s' % count)
                 previous_data = cur.fetchone()
-                kwh_hp = 0.001572
-                kwh_hc = 0.001096
+
                 nhour = previous_data['Hour']
-                ndiffhp = previous_data['Diff_HP'] * kwh_hp
-                ndiffhc = previous_data['Diff_HC'] * kwh_hc
-                nresult = ndiffhp + ndiffhc
+                ndiffhp = previous_data['Diff_HP']
+                ndiffhc = previous_data['Diff_HC']
+                trace1 = Bar(x=nhour, y=ndiffhp, name='HP')
+                trace2 = Bar(x=nhour, y=ndiffhc, name='HC')
+                data = Data([trace1, trace2])
+                layout = Layout(barmode='stack')
+                fig = Figure(data=data, layout=layout)
 
                 # Used for ignore the warning InsecurePlatformWarning in python 2.7.3
                 requests.packages.urllib3.disable_warnings()
                 tls.get_credentials_file()
-
-                data = Data([Bar(x=[nhour], y=[nresult], name='Centimes')])
-                py.plot(data, filename='teleinfo', fileopt='extend', auto_open=False)
+                py.plot(fig, filename='test', fileopt='extend', auto_open=False)
+                print "data uploaded to plotly"
 
         except sqlite3.Error, e:
             print "Error %s:" % e.args[0]
@@ -864,8 +626,71 @@ def plotly_test():
     except urllib2.URLError:
         exit()
 
+def testlist():
+
+    upl = 0
+    conn = sqlite3.connect(DATABASE_NAME)
+
+    with conn:
+        # connect database in dictionary mode
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+
+        # Search the first rowid with uploaded = 0   ****************
+        cur.execute('SELECT Count() FROM %s' % 'CurrentWeek')
+        count = cur.fetchone()[0]
+        count_end = count
+        #print "count_end = %i" % count
+        while upl == 0 and count > 0:
+            cur.execute('SELECT * FROM CurrentWeek WHERE rowid = %s' % count)
+            upl = cur.fetchone()['UPLOADED']
+            count -= 1
+        if upl == 0:
+            #print "count_start = 1"
+            count_start = 1
+        else:
+            if count+2 > count_end:
+                #print "count_start = 0"
+                count_start = 0
+            else:
+                #print "count_start = %i" % (count+2)
+                count_start = count + 2
+        # end of search **********************************************
+
+        # construct the differents list for stacked bar graph
+        if count_start:
+            y1range = []
+            y2range = []
+            x1range = []
+
+            for count in range(count_start, count_end+1):
+                cur.execute('SELECT * FROM CurrentWeek WHERE rowid = %s' % count)
+                data = cur.fetchone()
+                x1range.append(str(data['Hour']))
+                y1range.append(int(data['Diff_HP']))
+                y2range.append(int(data['Diff_HC']))
+                cur.execute('UPDATE  CurrentWeek SET UPLOADED = %s WHERE rowid = %s' % (1, count))
+
+            # upload data list to plotly
+            trace1 = Bar(x=x1range, y=y1range, name='HP')
+            trace2 = Bar(x=x1range, y=y2range, name='HC')
+            data = Data([trace1, trace2])
+            layout = Layout(barmode='stack')
+            fig = Figure(data=data, layout=layout)
+            requests.packages.urllib3.disable_warnings()
+            tls.get_credentials_file()
+            py.plot(fig, filename='testlistooo', fileopt='extend', auto_open=False)
+            print "%i data uploaded " % (count_end-count_start+1)
+
+
+
 if __name__ == '__main__':
-    database_update(sys.argv[1:])
-    plotly_test()
+
+    testlist()
+
+    '''database_update(sys.argv[1:])
+    upload_plotly()
+    for x in range(0,15):
+        database_update(teststring())'''
 
 
