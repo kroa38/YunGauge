@@ -399,6 +399,12 @@ def database_update(liste):
 
         with conn:
             # connect database in dictionary mode
+            e_day = 0
+            e_week = 0
+            e_month = 0
+            e_year = 0
+            e_clean = 0
+
             conn.row_factory = sqlite3.Row
             cur = conn.cursor()
 
@@ -491,6 +497,7 @@ def database_update(liste):
                                 Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC, UPLOADED)\
                                 VALUES(?,?,?,?,?,?,?,?,?)'
                     cur.execute(sqlquery, (nyear, nmonth, nday, nchp, nchc, 0, 0, 0, 0))
+                    e_day = 1
 
                 # ###############################  Week PROCESSING    ##############################################
                 cur.execute('SELECT Count() FROM Week')
@@ -514,6 +521,7 @@ def database_update(liste):
                                 Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC, UPLOADED)\
                                 VALUES(?,?,?,?,?,?,?,?)'
                     cur.execute(sqlquery, (nyear, nweekn, nchp, nchc, 0, 0, 0, 0))
+                    e_week = 1
 
                     # ----------------------------------------------------------------------------
                     #     Remove Week in the CurrentWeek table
@@ -523,7 +531,7 @@ def database_update(liste):
                         last_week = cur.fetchone()['Week_Number'] - maxweek
                         cur.execute('DELETE FROM CurrentWeek WHERE Week_Number = %s' % last_week)
                         cur.execute('VACUUM')  # #### VERY IMPORTANT ##### #
-                        pass
+                        e_clean = 1
 
                 # ###############################  Month PROCESSING    ##############################################
                 cur.execute('SELECT Count() FROM Month')
@@ -546,6 +554,7 @@ def database_update(liste):
                                 Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC, UPLOADED)\
                                 VALUES(?,?,?,?,?,?,?,?)'
                     cur.execute(sqlquery, (nyear, nmonth, nchp, nchc, 0, 0, 0, 0))
+                    e_month = 1
 
                 # ###############################  Year PROCESSING    ##############################################
                 cur.execute('SELECT Count() FROM Year')
@@ -569,9 +578,15 @@ def database_update(liste):
                                 Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC, UPLOADED)\
                                 VALUES(?,?,?,?,?,?,?)'
                     cur.execute(sqlquery, (nyear, nchp, nchc, 0, 0, 0, 0))
+                    e_year = 1
+
+        listevent = [e_day, e_week, e_month, e_year, e_clean]
+        return listevent
 
     except sqlite3.Error, e:
         print "Error %s:" % e.args[0]
+
+
 
 
 def filldb():
@@ -612,32 +627,37 @@ def filldb():
 
 def upload_to_plotly():
 
-    upl = 0
     conn = sqlite3.connect(DATABASE_NAME)
 
+    '''e_day = listevent[0]
+    e_week = listevent[1]
+    e_month = listevent[2]
+    e_year = listevent[3]
+    e_clean = listevent[4]'''
+
     with conn:
+
         # connect database in dictionary mode
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
-
-        # Search the first rowid with uploaded = 0   ****************
+        # ****************************************************************************** #
+        # Process for CurrentWeek Table
+        # ****************************************************************************** #
+        # Search the first rowid with uploaded = 0
         cur.execute('SELECT Count() FROM %s' % 'CurrentWeek')
         count = cur.fetchone()[0]
         count_end = count
-        #print "count_end = %i" % count
+        upl = 0
         while upl == 0 and count > 0:
             cur.execute('SELECT * FROM CurrentWeek WHERE rowid = %s' % count)
             upl = cur.fetchone()['UPLOADED']
             count -= 1
         if upl == 0:
-            #print "count_start = 1"
             count_start = 1
         else:
             if count+2 > count_end:
-                #print "count_start = 0"
                 count_start = 0
             else:
-                #print "count_start = %i" % (count+2)
                 count_start = count + 2
         # end of search **********************************************
 
@@ -654,38 +674,78 @@ def upload_to_plotly():
                 x1range.append(str(data['Hour']))
                 hp_range.append(data['Diff_HP'])
                 hc_range.append(data['Diff_HC'])
-                #cur.execute('UPDATE  CurrentWeek SET UPLOADED = %s WHERE rowid = %s' % (1, count))
-
-            # upload data list to plotly
-            trace1 = Bar(x=x1range, y=hp_range, name='HP')
-            trace2 = Bar(x=x1range, y=hc_range, name='HC')
-            data = Data([trace1, trace2])
-            layout = Layout(barmode='stack')
-            fig = Figure(data=data, layout=layout)
-            requests.packages.urllib3.disable_warnings()
-            tls.get_credentials_file()
-            py.plot(fig, filename='testlistooo', fileopt='extend', auto_open=False)
-
-            # code for Cumul_HP Cumul_HC
-            for count in range(count_start, count_end+1):
-                cur.execute('SELECT * FROM CurrentWeek WHERE rowid = %s' % count)
-                data = cur.fetchone()
-                x1range.append(str(data['Hour']))
-                hp_range.append(data['Cumul_HP'])
-                hc_range.append(data['Cumul_HC'])
                 cur.execute('UPDATE  CurrentWeek SET UPLOADED = %s WHERE rowid = %s' % (1, count))
 
             # upload data list to plotly
             trace1 = Bar(x=x1range, y=hp_range, name='HP')
             trace2 = Bar(x=x1range, y=hc_range, name='HC')
-            data = Data([trace1, trace2])
+            dataobj = Data([trace1, trace2])
             layout = Layout(barmode='stack')
-            fig = Figure(data=data, layout=layout)
+            fig = Figure(data=dataobj, layout=layout)
             requests.packages.urllib3.disable_warnings()
             tls.get_credentials_file()
-            py.plot(fig, filename='testlistuuu', fileopt='extend', auto_open=False)
+            py.plot(fig, filename='CurrentWeek_Diff', fileopt='extend', auto_open=False)
 
+            # code for Cumul_HPHC
+            cur.execute('SELECT * FROM CurrentWeek WHERE rowid = %s' % count)
+            data = cur.fetchone()
+            x1range = str(data['Hour'])
+            hp_range = data['Cumul_HP']
+            hc_range = data['Cumul_HC']
+            trace1 = Bar(x=x1range, y=hp_range, name='HP')
+            trace2 = Bar(x=x1range, y=hc_range, name='HC')
+            dataobj = Data([trace1, trace2])
+            layout = Layout(title='Today Cumul', barmode='stack', yaxis=YAxis(title='Watt'),xaxis=XAxis(title='Hour'))
+            fig = Figure(data=dataobj, layout=layout)
+            requests.packages.urllib3.disable_warnings()
+            tls.get_credentials_file()
+            py.plot(fig, filename='Today_Cumul', fileopt='overwrite', auto_open=False)
 
+        # ****************************************************************************** #
+        # Process for Day Table
+        # ****************************************************************************** #
+        # Search the first rowid with uploaded = 0
+        cur.execute('SELECT Count() FROM %s' % 'Day')
+        count = cur.fetchone()[0]
+        count_end = count
+        upl = 0
+        while upl == 0 and count > 0:
+            cur.execute('SELECT * FROM Day WHERE rowid = %s' % count)
+            upl = cur.fetchone()['UPLOADED']
+            count -= 1
+        if upl == 0:
+            count_start = 1
+        else:
+            if count+2 > count_end:
+                count_start = 0
+            else:
+                count_start = count + 2
+        # end of search **********************************************
+
+        # construct the differents list for stacked bar graph
+        if count_start:
+            hp_range = []
+            hc_range = []
+            x1range = []
+
+            # code for Cumul_HP Cumul_HC
+            for count in range(count_start, count_end+1):
+                cur.execute('SELECT * FROM Day WHERE rowid = %s' % count)
+                data = cur.fetchone()
+                x1range.append(str(data['Day']) + "-" + str(data['Month']) + "-" + str(data['Year']) )
+                hp_range.append(data['Cumul_HP'])
+                hc_range.append(data['Cumul_HC'])
+                cur.execute('UPDATE  Day SET UPLOADED = %s WHERE rowid = %s' % (1, count))
+
+            # upload data list to plotly
+            trace1 = Bar(x=x1range, y=hp_range, name='HP')
+            trace2 = Bar(x=x1range, y=hc_range, name='HC')
+            dataobj = Data([trace1, trace2])
+            layout = Layout(barmode='stack')
+            fig = Figure(data=dataobj, layout=layout)
+            requests.packages.urllib3.disable_warnings()
+            tls.get_credentials_file()
+            py.plot(fig, filename='Days', fileopt='extend', auto_open=False)
 
 if __name__ == '__main__':
 
