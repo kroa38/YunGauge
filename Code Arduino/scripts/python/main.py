@@ -581,7 +581,7 @@ def database_update(liste):
                     new_year = 1
 
         listevent = [new_day, new_week, new_month, new_year, event_clean]
-        return listevent
+        return event_clean
 
     except sqlite3.Error, e:
         print "Error %s:" % e.args[0]
@@ -623,22 +623,16 @@ def filldb():
         for x in range(1, count+1):
             cur.execute('UPDATE  Year SET UPLOADED = %s WHERE rowid = %s' % (0, x))
 
-def plotly_main(listevent):
+def plotly_main(event_clean):
 
-    new_day = listevent[0]
-    new_week = listevent[1]
-    new_month = listevent[2]
-    new_year = listevent[3]
-    event_clean = listevent[4]
-
-    plotly_currentweek()
+    plotly_currentweek(event_clean)
     plotly_day()
     plotly_week()
     plotly_month()
     plotly_year()
 
 
-def plotly_currentweek():
+def plotly_currentweek(event_clean):
 
     conn = sqlite3.connect(DATABASE_NAME)
 
@@ -692,7 +686,10 @@ def plotly_currentweek():
             fig = Figure(data=dataobj, layout=layout)
             requests.packages.urllib3.disable_warnings()
             tls.get_credentials_file()
-            py.plot(fig, filename='CurrentWeek_Diff', fileopt='extend', auto_open=False)
+            if event_clean:
+                py.plot(fig, filename='CurrentWeek_Diff', fileopt='overwrite', auto_open=False)
+            else:
+                py.plot(fig, filename='CurrentWeek_Diff', fileopt='extend', auto_open=False)
 
             # code for Cumul_HPHC
             cur.execute('SELECT * FROM CurrentWeek WHERE rowid = %s' % count)
@@ -746,9 +743,6 @@ def plotly_day():
                 hp_range.append(data['Cumul_HP'])
                 hc_range.append(data['Cumul_HC'])
                 cur.execute('UPDATE  Day SET UPLOADED = %s WHERE rowid = %s' % (1, count))
-            print x1range
-            print hp_range
-            print hc_range
 
             # upload data list to plotly
             trace1 = Bar(x=x1range, y=hp_range, name='HP')
@@ -797,9 +791,6 @@ def plotly_week():
                 hp_range.append(data['Cumul_HP'])
                 hc_range.append(data['Cumul_HC'])
                 cur.execute('UPDATE  Week SET UPLOADED = %s WHERE rowid = %s' % (1, count))
-            print x1range
-            print hp_range
-            print hc_range
 
             # upload data list to plotly
             trace1 = Bar(x=x1range, y=hp_range, name='HP')
@@ -847,9 +838,6 @@ def plotly_month():
                 hp_range.append(data['Cumul_HP'])
                 hc_range.append(data['Cumul_HC'])
                 cur.execute('UPDATE  Month SET UPLOADED = %s WHERE rowid = %s' % (1, count))
-            print x1range
-            print hp_range
-            print hc_range
 
             # upload data list to plotly
             trace1 = Bar(x=x1range, y=hp_range, name='HP')
@@ -897,9 +885,6 @@ def plotly_year():
                 hp_range.append(data['Cumul_HP'])
                 hc_range.append(data['Cumul_HC'])
                 cur.execute('UPDATE  Year SET UPLOADED = %s WHERE rowid = %s' % (1, count))
-            print x1range
-            print hp_range
-            print hc_range
 
             # upload data list to plotly
             trace1 = Bar(x=x1range, y=hp_range, name='HP')
@@ -914,8 +899,8 @@ def plotly_year():
 
 if __name__ == '__main__':
 
-    #filldb()
-    upload_to_plotly()
+    filldb()
+    plotly_main(1)
 
     '''database_update(sys.argv[1:])
     upload_plotly()
