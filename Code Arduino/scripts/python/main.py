@@ -25,6 +25,7 @@ import sqlite3
 import calendar
 import urllib2  # lib pour requettes internet
 import os.path  # lib pour test fichiers
+from plotly import exceptions
 from plotly.graph_objs import *
 from cloudscope import log_error
 from cloudscope import oauth2_build
@@ -661,7 +662,7 @@ def plotly_currentweek(event_clean):
             upl = 0
             while upl == 0 and count > 0:
                 cur.execute('SELECT * FROM CurrentWeek WHERE rowid = %s' % count)
-                upl = cur.fetchone()['UPLOADED']
+                upl = int(cur.fetchone()['UPLOADED'])
                 count -= 1
             if upl == 0:
                 count_start = 1
@@ -685,7 +686,6 @@ def plotly_currentweek(event_clean):
                     x1range.append(str(data['Hour']))
                     hp_range.append(data['Diff_HP'])
                     hc_range.append(data['Diff_HC'])
-                    cur.execute('UPDATE  CurrentWeek SET UPLOADED = %s WHERE rowid = %s' % (1, count))
 
                 # upload data list to plotly
                 trace1 = Bar(x=x1range, y=hp_range, name='HP')
@@ -713,9 +713,13 @@ def plotly_currentweek(event_clean):
                                 xaxis=XAxis(title='Hour'))
                 fig = Figure(data=dataobj, layout=layout)
                 requests.packages.urllib3.disable_warnings()
-                tls.get_credentials_file()
-                py.plot(fig, filename='Today_Cumul', fileopt='overwrite', auto_open=False)
-
+                try:
+                    tls.get_credentials_file()
+                    py.plot(fig, filename='Today_Cumul', fileopt='overwrite', auto_open=False)
+                    for count in range(count_start, count_end+1):
+                        cur.execute('UPDATE  CurrentWeek SET UPLOADED = %s WHERE rowid = %s' % (1, count))
+                except exceptions.PlotlyConnectionError:
+                    log_error("plotly error in plotly_currentweek() ")
     except sqlite3.Error:
         log_error("Error database access in plotly_CurrentWeek()")
         # print "Error %s:" % e.args[0]
@@ -740,7 +744,7 @@ def plotly_day():
             upl = 0
             while upl == 0 and count > 0:
                 cur.execute('SELECT * FROM Day WHERE rowid = %s' % count)
-                upl = cur.fetchone()['UPLOADED']
+                upl = int(cur.fetchone()['UPLOADED'])
                 count -= 1
             if upl == 0:
                 count_start = 1
@@ -771,9 +775,13 @@ def plotly_day():
                                 xaxis=XAxis(title='Date'))
                 fig = Figure(data=dataobj, layout=layout)
                 requests.packages.urllib3.disable_warnings()
-                tls.get_credentials_file()
-                py.plot(fig, filename='Day', fileopt='overwrite', auto_open=False)
-
+                try:
+                    tls.get_credentials_file()
+                    py.plot(fig, filename='Day', fileopt='overwrite', auto_open=False)
+                    for count in range(count_start, count_end+1):
+                        cur.execute('UPDATE  CurrentWeek SET UPLOADED = %s WHERE rowid = %s' % (1, count))
+                except exceptions.PlotlyConnectionError:
+                    log_error("plotly error in plotly_day() ")
     except sqlite3.Error:
         log_error("Error database access in plotly_day()")
         # print "Error %s:" % e.args[0]
@@ -798,7 +806,7 @@ def plotly_week():
             upl = 0
             while upl == 0 and count > 0:
                 cur.execute('SELECT * FROM Week WHERE rowid = %s' % count)
-                upl = cur.fetchone()['UPLOADED']
+                upl = int(cur.fetchone()['UPLOADED'])
                 count -= 1
             if upl == 0:
                 count_start = 1
@@ -829,9 +837,13 @@ def plotly_week():
                                 xaxis=XAxis(title='Date'))
                 fig = Figure(data=dataobj, layout=layout)
                 requests.packages.urllib3.disable_warnings()
-                tls.get_credentials_file()
-                py.plot(fig, filename='Week', fileopt='overwrite', auto_open=False)
-
+                try:
+                    tls.get_credentials_file()
+                    py.plot(fig, filename='Week', fileopt='overwrite', auto_open=False)
+                    for count in range(count_start, count_end+1):
+                        cur.execute('UPDATE  CurrentWeek SET UPLOADED = %s WHERE rowid = %s' % (1, count))
+                except exceptions.PlotlyConnectionError:
+                    log_error("plotly error in plotly_week() ")
     except sqlite3.Error:
         log_error("Error database access in plotly_week()")
         # print "Error %s:" % e.args[0]
@@ -856,7 +868,7 @@ def plotly_month():
             upl = 0
             while upl == 0 and count > 0:
                 cur.execute('SELECT * FROM Month WHERE rowid = %s' % count)
-                upl = cur.fetchone()['UPLOADED']
+                upl = int(cur.fetchone()['UPLOADED'])
                 count -= 1
             if upl == 0:
                 count_start = 1
@@ -887,9 +899,13 @@ def plotly_month():
                                 xaxis=XAxis(title='Year-Month'))
                 fig = Figure(data=dataobj, layout=layout)
                 requests.packages.urllib3.disable_warnings()
-                tls.get_credentials_file()
-                py.plot(fig, filename='Month', fileopt='overwrite', auto_open=False)
-
+                try:
+                    tls.get_credentials_file()
+                    py.plot(fig, filename='Month', fileopt='overwrite', auto_open=False)
+                    for count in range(count_start, count_end+1):
+                        cur.execute('UPDATE  CurrentWeek SET UPLOADED = %s WHERE rowid = %s' % (1, count))
+                except exceptions.PlotlyConnectionError:
+                    log_error("plotly error in plotly_month() ")
     except sqlite3.Error:
         log_error("Error database access in plotly_month()")
         # print "Error %s:" % e.args[0]
@@ -915,7 +931,7 @@ def plotly_year():
             upl = 0
             while upl == 0 and count > 0:
                 cur.execute('SELECT * FROM Year WHERE rowid = %s' % count)
-                upl = cur.fetchone()['UPLOADED']
+                upl = int(cur.fetchone()['UPLOADED'])
                 count -= 1
             if upl == 0:
                 count_start = 1
@@ -946,9 +962,13 @@ def plotly_year():
                                 xaxis=XAxis(title='Year'))
                 fig = Figure(data=dataobj, layout=layout)
                 requests.packages.urllib3.disable_warnings()
-                tls.get_credentials_file()
-                py.plot(fig, filename='Year', fileopt='overwrite', auto_open=False)
-
+                try:
+                    tls.get_credentials_file()
+                    py.plot(fig, filename='Year', fileopt='overwrite', auto_open=False)
+                    for count in range(count_start, count_end+1):
+                        cur.execute('UPDATE  CurrentWeek SET UPLOADED = %s WHERE rowid = %s' % (1, count))
+                except exceptions.PlotlyConnectionError:
+                    log_error("plotly error in plotly_year() ")
     except sqlite3.Error:
         log_error("Error database access in plotly_year()")
         # print "Error %s:" % e.args[0]
@@ -957,7 +977,7 @@ def plotly_year():
 if __name__ == '__main__':
 
     filldb()
-    plotly_main(1)
+    plotly_main(0)
 
     '''database_update(sys.argv[1:])
     upload_plotly()
