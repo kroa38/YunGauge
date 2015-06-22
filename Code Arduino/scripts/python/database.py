@@ -51,6 +51,8 @@ class DataBase:
                     cur.execute('CREATE TABLE Year(Year INTEGER, \
                                 Index_HP INTEGER, Index_HC INTEGER, Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER,\
                                 UPLOADED INTEGER);')
+                    # create a table for events
+                    cur.execute('CREATE TABLE Event(Plotly INTEGER, Day_Counter INTEGER);')
 
             except sqlite3.Error:
                 log_error("Error when try to create database in create_database() ")
@@ -83,17 +85,17 @@ class DataBase:
 
         else:
 
-            nhp = int(dataliste[0])
-            nhc = int(dataliste[1])
-            nmode = str(dataliste[2])
-            ndayna = datetime.now().strftime("%A")  # day name string
-            nwdaynu = int(datetime.now().strftime("%w"))  # weekday number decimal
-            nhour = datetime.now().strftime("%H:%M")  # Hour:Minute string
-            ndate = datetime.now().strftime("%d-%m-%Y")  # day decimal
-            nweekn = int(datetime.now().strftime("%W"))  # week number
-            nyear = int(datetime.now().strftime("%Y"))  # week number
-            nmonth = int(datetime.now().strftime("%m"))  # month decimal
-            nday = int(datetime.now().strftime("%d"))  # day decimal
+            nhp = int(dataliste[0])                         # HP index from arduino
+            nhc = int(dataliste[1])                         # HC index from arduino
+            nmode = str(dataliste[2])                       # HC or HP mode from arduino
+            ndayna = datetime.now().strftime("%A")          # day name string
+            nwdaynu = int(datetime.now().strftime("%w"))    # weekday number decimal
+            nhour = datetime.now().strftime("%H:%M")        # Hour:Minute string
+            ndate = datetime.now().strftime("%d-%m-%Y")     # day decimal
+            nweekn = int(datetime.now().strftime("%W"))     # week number
+            nyear = int(datetime.now().strftime("%Y"))      # week number
+            nmonth = int(datetime.now().strftime("%m"))     # month decimal
+            nday = int(datetime.now().strftime("%d"))       # day decimal
 
         maxweek = 1
 
@@ -142,6 +144,9 @@ class DataBase:
                                 VALUES(?,?,?,?,?,?,?,?,?)'
                     cur.execute(sqlquery, (nyear, nmonth, nday, nhp, nhc, 0, 0, 0, 0))
 
+                    sqlquery = 'INSERT INTO Event (Plotly, Day_Counter) VALUES(?,?)'
+                    cur.execute(sqlquery, (0, 0))
+
                 else:
 
                     # ############################### CurrentWeek PROCESSING    ###########################################
@@ -172,6 +177,22 @@ class DataBase:
                         nchp = ndhp
                         nchc = ndhc
                         nchphc = nchp + nchc
+
+                        #Erase table if we have recorded 2 days max
+                        cur.execute('SELECT * FROM Event WHERE rowid = %i' % 1)
+                        previous_data = cur.fetchone()
+                        day_counter = previous_data['Day_Counter'] + 1
+                        print "day_counter = %i" % day_counter
+                        if day_counter < 2:
+                            cur.execute('UPDATE  Event SET Day_Counter = %i WHERE rowid = 1' % day_counter)
+                        else:
+                            print "table cleaned"
+                            cur.execute('UPDATE  Event SET Plotly = %i WHERE rowid = %i' % (1, 1))
+                            cur.execute('UPDATE  Event SET Day_Counter = %i WHERE rowid = %i' % (0, 1))
+                            cur.execute('SELECT * FROM CurrentWeek WHERE rowid = %s' % 1)
+                            previous_data = cur.fetchone()['WeekDay_Number']
+                            cur.execute('DELETE FROM CurrentWeek WHERE WeekDay_Number = %i' % previous_data)
+                            cur.execute('VACUUM')  # #### VERY IMPORTANT ##### #
 
                         cur.execute(sqlquery, (nyear, nmonth, nday, nweekn, nwdaynu, ndayna, ndate,
                                                nhour, nmode, nhp, nhc, ndhp, ndhc, ndhphc, nchp, nchc, nchphc, 0))
@@ -225,12 +246,12 @@ class DataBase:
                         # ----------------------------------------------------------------------------
                         #     Remove Week in the CurrentWeek table
                         # ----------------------------------------------------------------------------
-                        if count > maxweek:
+                        '''if count > maxweek:
                             cur.execute('SELECT * FROM Week WHERE rowid = %s' % count)
                             last_week = cur.fetchone()['Week_Number'] - maxweek
                             cur.execute('DELETE FROM CurrentWeek WHERE Week_Number = %s' % last_week)
                             cur.execute('VACUUM')  # #### VERY IMPORTANT ##### #
-                            event_clean = 1
+                            event_clean = 1'''
 
                     # ###############################  Month PROCESSING    ##############################################
                     cur.execute('SELECT Count() FROM Month')

@@ -43,7 +43,7 @@ def datalist_test():
     global index_hc
     global index_hp
     global epochdate
-    epochdate += 900
+    epochdate += 1800
 
     datetime_iso8601 = TimeFunc.epoch_to_iso8601(epochdate)
     heures = int(TimeFunc.epoch_to_hour(epochdate))
@@ -65,7 +65,7 @@ def datalist_test():
         index_hc += abs(random.randint(1, 100))  # increment HC during HC time
 
     liste1 = [index_hp, index_hc, mode, datetime_iso8601]
-    print liste1
+    #print liste1
     # liste2 = [index_hp, index_hc, mode]
 
     return liste1
@@ -77,8 +77,8 @@ if __name__ == '__main__':
 
     '''database_update(sys.argv[1:])
     upload_plotly()'''
-    for x in range(0,15):
+    for x in range(0, 905):
         evt = DataBase.update(DATABASE_NAME, 1, datalist_test())
-        print "event clean = %i" % evt
-        PlotlyPlot.plot(DATABASE_NAME, evt)
+
+        #PlotlyPlot.plot(DATABASE_NAME, evt)
 
