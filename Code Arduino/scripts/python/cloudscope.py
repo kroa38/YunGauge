@@ -37,7 +37,6 @@ import gspread          # lib for google spreadsheet
 import json             # lib pour fichiers json
 import os.path          # lib pour test fichiers
 import urllib2          # lib pour requettes internet
-import sys
 
 from apiclient.discovery import build
 from apiclient.http import MediaFileUpload
