@@ -44,6 +44,12 @@ from oauth2client.file import Storage
 from apiclient import errors
 from email.mime.text import MIMEText
 
+'''
+DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive '
+GMAIL_SCOPE = 'https://mail.google.com/'
+SHEET_SCOPE = 'https://spreadsheets.google.com/feeds'
+'''
+
 
 def oauth2_build(scope):
     """  query oauth2 to google
@@ -115,7 +121,6 @@ def drive_insert_file(file_name, folder_id):
         exit()
 
 
-
 def drive_delete_file(file_id):
     """  delete a file in drive
     :itype : string (id of the file)
@@ -164,6 +169,7 @@ def print_files_in_folder(folder_id):
             break
     exit()
 
+
 def gmaillistmessage():
     """  liste les messages de la boite mail
     :itype : none
@@ -180,6 +186,7 @@ def gmaillistmessage():
         error = error['error']['message']
         log_error("HttpError in function  : gmaillistmessage() : " + error)
         exit()
+
 
 def gmailsendmessage(message):
     """  envoie le message par email
@@ -200,6 +207,7 @@ def gmailsendmessage(message):
         log_error("HttpError in function : gmailsendmessage()" + error)
         exit()
 
+
 def gmailcreatemessage(message_text):
     """  creation du message à envoyer pour email
     :itype : string text message
@@ -216,7 +224,6 @@ def gmailcreatemessage(message_text):
     return {'raw': base64.b64encode(message.as_string())}
 
 
-
 def get_json_data_from_file(file_name):
     """ Return the data object from the  json file in a python dictionnary.
     :itype : file name
@@ -230,7 +237,6 @@ def get_json_data_from_file(file_name):
     else:
         python_data = json.loads(json_data)
         return python_data
-
 
 
 def check_internet():
@@ -274,7 +280,6 @@ def email_ip_addr():
     gmailsendmessage(get_ip_adress())
 
 
-
 def log_error(error_message):
     """ log to the file error.log the current error with the date
     :itype : string message
@@ -288,6 +293,7 @@ def log_error(error_message):
     f.write(now + "    " + error_message + "\r\n")
     f.close()
 
+
 def log_event(event_message):
     """ log to the file event.log the current event with the date
     :itype : string message
@@ -300,8 +306,6 @@ def log_event(event_message):
     f = open(logfile, "a")
     f.write(now + "    " + event_message + "\r\n")
     f.close()
-
-
 
 # drive_delete_file("0B9Yp8cxBtjfea2xiU3VEblRsaE0")
 # File_Id = drive_insert_file("teleinfo.log",test_folder)

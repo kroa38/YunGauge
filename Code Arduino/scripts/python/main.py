@@ -3,25 +3,28 @@
 
 
 import random
-import os.path, sys
+import os.path
+import sys
 from cloudscope import oauth2_build
 from database import DataBase
 from timefunc import TimeFunc
+from plotlyplot import PlotlyPlot
 
 
-
+'''
 DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive '
 GMAIL_SCOPE = 'https://mail.google.com/'
-SHEET_SCOPE = 'https://spreadsheets.google.com/feeds'
-# DATABASE_NAME = '/root/python/database.db'
-DATABASE_NAME = 'database.db'
+'''
 index_hp = 5451113
 index_hc = 5323021
-epochdate = 1403481600 - 5*3600
+epochdate = 1403482200
 
 
 def worksheet():
-    sheet_service = oauth2_build(SHEET_SCOPE)
+
+    sheet_scope = 'https://spreadsheets.google.com/feeds'
+
+    sheet_service = oauth2_build(sheet_scope)
     wks = sheet_service.open("teleinfo").sheet1
     for ligne in range(1, 10):
         data = float(ligne) * 3.48
@@ -60,6 +63,7 @@ def datalist_test():
     # check between 00h00 and 03h08
     if (heures * 60 + minutes > 0) and (heures * 60 + minutes < 3 * 60 + 8):
         mode = "HC"
+
     if mode == "HP":
         index_hp += abs(random.randint(1, 100))  # increment HP during HP time
     if mode == "HC":
@@ -68,20 +72,26 @@ def datalist_test():
     liste1 = [index_hp, index_hc, mode, datetime_iso8601]
 
     return liste1
-
+'''
+************************************************************************
+************************************************************************
+************************************************************************
+'''
 if __name__ == '__main__':
 
-    '''DataBase.resetflagupload()
-    plotly_main(0)'''
+    test = 1
 
-    '''database_update(sys.argv[1:])
-    upload_plotly()'''
-    if os.path.isfile(DATABASE_NAME):
-        os.remove(DATABASE_NAME)
-        print "file removed"
+    if test == 1:
+        dbname = 'database.db'
+        if os.path.isfile(dbname):
+            os.remove(dbname)
+            print "database removed"
+        for x in range(0, 490):
+            evt = DataBase.update(dbname, test, datalist_test())
+        #PlotlyPlot.plot(dbname)
+    else:
+        dbname = '/root/python/database.db'
+        DataBase.update(dbname, test, sys.argv[1:])
+        PlotlyPlot.plot(dbname)
 
-    for x in range(0, 260):
-        evt = DataBase.update(DATABASE_NAME, 1, datalist_test())
-
-        #PlotlyPlot.plot(DATABASE_NAME, evt)
 

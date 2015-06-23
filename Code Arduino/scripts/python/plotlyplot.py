@@ -4,10 +4,13 @@
 import sqlite3
 import plotly.plotly as py
 import plotly.tools as tls
+import urllib2
+import os
 import requests  # Used for the warning InsecurePlatformWarning in python 2.7.3
 from plotly import exceptions
 from plotly.graph_objs import *
 from cloudscope import log_error
+
 
 # DATABASE_NAME = '/root/python/database.db'
 # DATABASE_NAME = 'database.db'
@@ -19,18 +22,18 @@ class PlotlyPlot:
         pass
 
     @staticmethod
-    def plot(dbname, event_clean):
+    def plot(dbname):
         """
         Send to plotly the data
-        :param event_clean from data_base
+        :param dbname
         :return:   none
         """
         try:
             # for unlock websense (quiet and delete after download)
-            '''os.system("wget -q --delete-after www.google.fr")
-            _ = urllib2.urlopen('http://www.google.fr/', timeout=4)'''
+            os.system("wget -q --delete-after www.google.fr")
+            _ = urllib2.urlopen('http://www.google.fr/', timeout=4)
 
-            PlotlyPlot.currentweek(dbname, event_clean)
+            PlotlyPlot.currentweek(dbname)
             PlotlyPlot.day(dbname)
             PlotlyPlot.week(dbname)
             PlotlyPlot.month(dbname)
@@ -40,11 +43,11 @@ class PlotlyPlot:
             pass
 
     @staticmethod
-    def currentweek(dbname, event_clean):
+    def currentweek(dbname):
         """
         Send to plotly the currentweek tabel from the database
         update flag into the database if data uploaded
-        :param event_clean from data_base
+        :param dbname
         :return:   none
         """
         try:
@@ -60,7 +63,7 @@ class PlotlyPlot:
                 # Process for CurrentWeek Table
                 # ****************************************************************************** #
                 # Search the first rowid with uploaded = 0
-                cur.execute('SELECT Count() FROM %d' % 'CurrentWeek')
+                cur.execute('SELECT Count() FROM CurrentWeek')
                 count = cur.fetchone()[0]
                 count_end = count
                 upl = 0
@@ -95,7 +98,7 @@ class PlotlyPlot:
                     trace1 = Bar(x=x1range, y=hp_range, name='HP')
                     trace2 = Bar(x=x1range, y=hc_range, name='HC')
                     dataobj = Data([trace1, trace2])
-                    layout = Layout(barmode='stack')
+                    layout = Layout(title='CurrentDay', barmode='stack', yaxis=YAxis(title='Watt'))
                     fig = Figure(data=dataobj, layout=layout)
                     requests.packages.urllib3.disable_warnings()
                     cur.execute('SELECT * FROM Event WHERE rowid = 1')
@@ -151,7 +154,7 @@ class PlotlyPlot:
                 # connect database in dictionary mode
                 conn.row_factory = sqlite3.Row
                 cur = conn.cursor()
-                cur.execute('SELECT Count() FROM %d' % 'Day')
+                cur.execute('SELECT Count() FROM Day')
                 count = cur.fetchone()[0]
                 count_end = count
                 upl = 0
@@ -215,7 +218,7 @@ class PlotlyPlot:
                 # connect database in dictionary mode
                 conn.row_factory = sqlite3.Row
                 cur = conn.cursor()
-                cur.execute('SELECT Count() FROM %d' % 'Week')
+                cur.execute('SELECT Count() FROM Week')
                 count = cur.fetchone()[0]
                 count_end = count
                 upl = 0
@@ -279,7 +282,7 @@ class PlotlyPlot:
                 # connect database in dictionary mode
                 conn.row_factory = sqlite3.Row
                 cur = conn.cursor()
-                cur.execute('SELECT Count() FROM %d' % 'Month')
+                cur.execute('SELECT Count() FROM Month')
                 count = cur.fetchone()[0]
                 count_end = count
                 upl = 0
@@ -344,7 +347,7 @@ class PlotlyPlot:
                 # connect database in dictionary mode
                 conn.row_factory = sqlite3.Row
                 cur = conn.cursor()
-                cur.execute('SELECT Count() FROM %d' % 'Year')
+                cur.execute('SELECT Count() FROM Year')
                 count = cur.fetchone()[0]
                 count_end = count
                 upl = 0

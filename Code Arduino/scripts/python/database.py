@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import sqlite3
-import os.path, sys  # lib pour test fichiers
+import os.path  # lib pour test fichiers
 from cloudscope import log_error
 from datetime import datetime
 from timefunc import TimeFunc
@@ -98,8 +98,6 @@ class DataBase:
             nmonth = int(datetime.now().strftime("%m"))     # month decimal
             nday = int(datetime.now().strftime("%d"))       # day decimal
 
-        maxweek = 1
-
         DataBase.create(dbname)
 
         try:
@@ -182,8 +180,8 @@ class DataBase:
                         cur.execute(sqlquery, (nyear, nmonth, nday, nweekn, nwdaynu, ndayna, ndate,
                                                nhour, nmode, nhp, nhc, ndhp, ndhc, ndhphc, nchp, nchc, nchphc, 0))
 
-                        #Erase table if we have recorded 2 days max
-                        print "Current Day = %d" % previous_data['Day']
+                        # Erase table if we have recorded 2 days max
+                        # print "Current Day = %d" % previous_data['Day']
                         cur.execute('SELECT * FROM Event WHERE rowid = %d' % 1)
                         previous_data = cur.fetchone()
                         day_counter = previous_data['Day_Counter']
@@ -195,7 +193,7 @@ class DataBase:
                             cur.execute('SELECT * FROM CurrentWeek WHERE rowid = 1')
                             previous_data = cur.fetchone()['Day']
                             cur.execute('DELETE FROM CurrentWeek WHERE Day = %d' % previous_data)
-                            print "Day %d removed" % previous_data
+                            # print "Day %d removed" % previous_data
                             cur.execute('VACUUM')  # #### VERY IMPORTANT ##### #
 
                     # ###############################  Day PROCESSING    ##############################################
