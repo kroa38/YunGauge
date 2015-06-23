@@ -3,10 +3,11 @@
 
 
 import random
+import os.path, sys
 from cloudscope import oauth2_build
 from database import DataBase
 from timefunc import TimeFunc
-from plotlyplot import PlotlyPlot
+
 
 
 DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive '
@@ -16,7 +17,7 @@ SHEET_SCOPE = 'https://spreadsheets.google.com/feeds'
 DATABASE_NAME = 'database.db'
 index_hp = 5451113
 index_hc = 5323021
-epochdate = 1022401000
+epochdate = 1403481600 - 5*3600
 
 
 def worksheet():
@@ -43,7 +44,7 @@ def datalist_test():
     global index_hc
     global index_hp
     global epochdate
-    epochdate += 1800
+    epochdate += 900
 
     datetime_iso8601 = TimeFunc.epoch_to_iso8601(epochdate)
     heures = int(TimeFunc.epoch_to_hour(epochdate))
@@ -65,8 +66,6 @@ def datalist_test():
         index_hc += abs(random.randint(1, 100))  # increment HC during HC time
 
     liste1 = [index_hp, index_hc, mode, datetime_iso8601]
-    #print liste1
-    # liste2 = [index_hp, index_hc, mode]
 
     return liste1
 
@@ -77,7 +76,11 @@ if __name__ == '__main__':
 
     '''database_update(sys.argv[1:])
     upload_plotly()'''
-    for x in range(0, 905):
+    if os.path.isfile(DATABASE_NAME):
+        os.remove(DATABASE_NAME)
+        print "file removed"
+
+    for x in range(0, 260):
         evt = DataBase.update(DATABASE_NAME, 1, datalist_test())
 
         #PlotlyPlot.plot(DATABASE_NAME, evt)

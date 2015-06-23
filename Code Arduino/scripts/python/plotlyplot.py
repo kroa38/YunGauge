@@ -60,12 +60,12 @@ class PlotlyPlot:
                 # Process for CurrentWeek Table
                 # ****************************************************************************** #
                 # Search the first rowid with uploaded = 0
-                cur.execute('SELECT Count() FROM %s' % 'CurrentWeek')
+                cur.execute('SELECT Count() FROM %d' % 'CurrentWeek')
                 count = cur.fetchone()[0]
                 count_end = count
                 upl = 0
                 while upl == 0 and count > 0:
-                    cur.execute('SELECT * FROM CurrentWeek WHERE rowid = %s' % count)
+                    cur.execute('SELECT * FROM CurrentWeek WHERE rowid = %d' % count)
                     upl = int(cur.fetchone()['UPLOADED'])
                     count -= 1
                 if upl == 0:
@@ -85,7 +85,7 @@ class PlotlyPlot:
 
                     # code for Diff_HP Diff_HC
                     for count in range(count_start, count_end+1):
-                        cur.execute('SELECT * FROM CurrentWeek WHERE rowid = %s' % count)
+                        cur.execute('SELECT * FROM CurrentWeek WHERE rowid = %d' % count)
                         data = cur.fetchone()
                         x1range.append(str(data['Hour']))
                         hp_range.append(data['Diff_HP'])
@@ -98,10 +98,13 @@ class PlotlyPlot:
                     layout = Layout(barmode='stack')
                     fig = Figure(data=dataobj, layout=layout)
                     requests.packages.urllib3.disable_warnings()
+                    cur.execute('SELECT * FROM Event WHERE rowid = 1')
+                    plotly_overwrite = cur.fetchone()['Plotly']
                     try:
                         tls.get_credentials_file()
-                        if event_clean:
+                        if plotly_overwrite:
                             py.plot(fig, filename='CurrentWeek_Diff', fileopt='overwrite', auto_open=False)
+                            cur.execute('UPDATE  Event SET Plotly = 0 WHERE rowid = 1')
                         else:
                             py.plot(fig, filename='CurrentWeek_Diff', fileopt='extend', auto_open=False)
                     except exceptions.PlotlyConnectionError:
@@ -109,7 +112,7 @@ class PlotlyPlot:
                         exit()
 
                     # code for Cumul_HPHC
-                    cur.execute('SELECT * FROM CurrentWeek WHERE rowid = %s' % count)
+                    cur.execute('SELECT * FROM CurrentWeek WHERE rowid = %d' % count)
                     data = cur.fetchone()
                     x1range = str(data['Hour'])
                     hp_range = data['Cumul_HP']
@@ -125,7 +128,7 @@ class PlotlyPlot:
                         tls.get_credentials_file()
                         py.plot(fig, filename='Today_Cumul', fileopt='overwrite', auto_open=False)
                         for count in range(count_start, count_end+1):
-                            cur.execute('UPDATE  CurrentWeek SET UPLOADED = %s WHERE rowid = %s' % (1, count))
+                            cur.execute('UPDATE  CurrentWeek SET UPLOADED = %d WHERE rowid = %d' % (1, count))
                     except exceptions.PlotlyConnectionError:
                         log_error("plotly error in plotly_currentweek() ")
                         exit()
@@ -148,12 +151,12 @@ class PlotlyPlot:
                 # connect database in dictionary mode
                 conn.row_factory = sqlite3.Row
                 cur = conn.cursor()
-                cur.execute('SELECT Count() FROM %s' % 'Day')
+                cur.execute('SELECT Count() FROM %d' % 'Day')
                 count = cur.fetchone()[0]
                 count_end = count
                 upl = 0
                 while upl == 0 and count > 0:
-                    cur.execute('SELECT * FROM Day WHERE rowid = %s' % count)
+                    cur.execute('SELECT * FROM Day WHERE rowid = %d' % count)
                     upl = int(cur.fetchone()['UPLOADED'])
                     count -= 1
                 if upl == 0:
@@ -170,12 +173,12 @@ class PlotlyPlot:
                     x1range = []
                     # code for Cumul_HP Cumul_HC
                     for count in range(count_start, count_end+1):
-                        cur.execute('SELECT * FROM Day WHERE rowid = %s' % count)
+                        cur.execute('SELECT * FROM Day WHERE rowid = %d' % count)
                         data = cur.fetchone()
                         x1range.append(str(data['Day']) + "/" + str(data['Month']) + "/" + str(data['Year']))
                         hp_range.append(data['Cumul_HP'])
                         hc_range.append(data['Cumul_HC'])
-                        cur.execute('UPDATE  Day SET UPLOADED = %s WHERE rowid = %s' % (1, count))
+                        cur.execute('UPDATE  Day SET UPLOADED = %d WHERE rowid = %d' % (1, count))
 
                     # upload data list to plotly
                     trace1 = Bar(x=x1range, y=hp_range, name='HP')
@@ -189,7 +192,7 @@ class PlotlyPlot:
                         tls.get_credentials_file()
                         py.plot(fig, filename='Day', fileopt='overwrite', auto_open=False)
                         for count in range(count_start, count_end+1):
-                            cur.execute('UPDATE  CurrentWeek SET UPLOADED = %s WHERE rowid = %s' % (1, count))
+                            cur.execute('UPDATE  CurrentWeek SET UPLOADED = %d WHERE rowid = %d' % (1, count))
                     except exceptions.PlotlyConnectionError:
                         log_error("plotly error in plotly_day() ")
                         exit()
@@ -212,12 +215,12 @@ class PlotlyPlot:
                 # connect database in dictionary mode
                 conn.row_factory = sqlite3.Row
                 cur = conn.cursor()
-                cur.execute('SELECT Count() FROM %s' % 'Week')
+                cur.execute('SELECT Count() FROM %d' % 'Week')
                 count = cur.fetchone()[0]
                 count_end = count
                 upl = 0
                 while upl == 0 and count > 0:
-                    cur.execute('SELECT * FROM Week WHERE rowid = %s' % count)
+                    cur.execute('SELECT * FROM Week WHERE rowid = %d' % count)
                     upl = int(cur.fetchone()['UPLOADED'])
                     count -= 1
                 if upl == 0:
@@ -234,12 +237,12 @@ class PlotlyPlot:
                     x1range = []
                     # code for Cumul_HP Cumul_HC
                     for count in range(count_start, count_end+1):
-                        cur.execute('SELECT * FROM Week WHERE rowid = %s' % count)
+                        cur.execute('SELECT * FROM Week WHERE rowid = %d' % count)
                         data = cur.fetchone()
                         x1range.append(str(data['Year']) + "W" + str(data['Week_Number']))
                         hp_range.append(data['Cumul_HP'])
                         hc_range.append(data['Cumul_HC'])
-                        cur.execute('UPDATE  Week SET UPLOADED = %s WHERE rowid = %s' % (1, count))
+                        cur.execute('UPDATE  Week SET UPLOADED = %d WHERE rowid = %d' % (1, count))
 
                     # upload data list to plotly
                     trace1 = Bar(x=x1range, y=hp_range, name='HP')
@@ -253,7 +256,7 @@ class PlotlyPlot:
                         tls.get_credentials_file()
                         py.plot(fig, filename='Week', fileopt='overwrite', auto_open=False)
                         for count in range(count_start, count_end+1):
-                            cur.execute('UPDATE  CurrentWeek SET UPLOADED = %s WHERE rowid = %s' % (1, count))
+                            cur.execute('UPDATE  CurrentWeek SET UPLOADED = %d WHERE rowid = %d' % (1, count))
                     except exceptions.PlotlyConnectionError:
                         log_error("plotly error in plotly_week() ")
                         exit()
@@ -276,12 +279,12 @@ class PlotlyPlot:
                 # connect database in dictionary mode
                 conn.row_factory = sqlite3.Row
                 cur = conn.cursor()
-                cur.execute('SELECT Count() FROM %s' % 'Month')
+                cur.execute('SELECT Count() FROM %d' % 'Month')
                 count = cur.fetchone()[0]
                 count_end = count
                 upl = 0
                 while upl == 0 and count > 0:
-                    cur.execute('SELECT * FROM Month WHERE rowid = %s' % count)
+                    cur.execute('SELECT * FROM Month WHERE rowid = %d' % count)
                     upl = int(cur.fetchone()['UPLOADED'])
                     count -= 1
                 if upl == 0:
@@ -298,12 +301,12 @@ class PlotlyPlot:
                     x1range = []
                     # code for Cumul_HP Cumul_HC
                     for count in range(count_start, count_end+1):
-                        cur.execute('SELECT * FROM Month WHERE rowid = %s' % count)
+                        cur.execute('SELECT * FROM Month WHERE rowid = %d' % count)
                         data = cur.fetchone()
                         x1range.append(str(data['Year']) + "-" + str(data['Month']))
                         hp_range.append(data['Cumul_HP'])
                         hc_range.append(data['Cumul_HC'])
-                        cur.execute('UPDATE  Month SET UPLOADED = %s WHERE rowid = %s' % (1, count))
+                        cur.execute('UPDATE  Month SET UPLOADED = %d WHERE rowid = %d' % (1, count))
 
                     # upload data list to plotly
                     trace1 = Bar(x=x1range, y=hp_range, name='HP')
@@ -317,7 +320,7 @@ class PlotlyPlot:
                         tls.get_credentials_file()
                         py.plot(fig, filename='Month', fileopt='overwrite', auto_open=False)
                         for count in range(count_start, count_end+1):
-                            cur.execute('UPDATE  CurrentWeek SET UPLOADED = %s WHERE rowid = %s' % (1, count))
+                            cur.execute('UPDATE  CurrentWeek SET UPLOADED = %d WHERE rowid = %d' % (1, count))
                     except exceptions.PlotlyConnectionError:
                         log_error("plotly error in plotly_month() ")
                         exit()
@@ -341,12 +344,12 @@ class PlotlyPlot:
                 # connect database in dictionary mode
                 conn.row_factory = sqlite3.Row
                 cur = conn.cursor()
-                cur.execute('SELECT Count() FROM %s' % 'Year')
+                cur.execute('SELECT Count() FROM %d' % 'Year')
                 count = cur.fetchone()[0]
                 count_end = count
                 upl = 0
                 while upl == 0 and count > 0:
-                    cur.execute('SELECT * FROM Year WHERE rowid = %s' % count)
+                    cur.execute('SELECT * FROM Year WHERE rowid = %d' % count)
                     upl = int(cur.fetchone()['UPLOADED'])
                     count -= 1
                 if upl == 0:
@@ -363,12 +366,12 @@ class PlotlyPlot:
                     x1range = []
                     # code for Cumul_HP Cumul_HC
                     for count in range(count_start, count_end+1):
-                        cur.execute('SELECT * FROM Year WHERE rowid = %s' % count)
+                        cur.execute('SELECT * FROM Year WHERE rowid = %d' % count)
                         data = cur.fetchone()
                         x1range.append(str(data['Year']))
                         hp_range.append(data['Cumul_HP'])
                         hc_range.append(data['Cumul_HC'])
-                        cur.execute('UPDATE  Year SET UPLOADED = %s WHERE rowid = %s' % (1, count))
+                        cur.execute('UPDATE  Year SET UPLOADED = %d WHERE rowid = %d' % (1, count))
 
                     # upload data list to plotly
                     trace1 = Bar(x=x1range, y=hp_range, name='HP')
@@ -382,7 +385,7 @@ class PlotlyPlot:
                         tls.get_credentials_file()
                         py.plot(fig, filename='Year', fileopt='overwrite', auto_open=False)
                         for count in range(count_start, count_end+1):
-                            cur.execute('UPDATE  CurrentWeek SET UPLOADED = %s WHERE rowid = %s' % (1, count))
+                            cur.execute('UPDATE  CurrentWeek SET UPLOADED = %d WHERE rowid = %d' % (1, count))
                     except exceptions.PlotlyConnectionError:
                         log_error("plotly error in plotly_year() ")
                         exit()

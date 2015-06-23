@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import sqlite3
-import os.path  # lib pour test fichiers
+import os.path, sys  # lib pour test fichiers
 from cloudscope import log_error
 from datetime import datetime
 from timefunc import TimeFunc
@@ -66,6 +66,7 @@ class DataBase:
         :param dbname, mode, dataliste
         :return:  None
         """
+        max_days = 1
 
         if test == 1:  # TEST MODE
 
@@ -112,7 +113,7 @@ class DataBase:
                 cur = conn.cursor()
 
                 # count number of row already inserted in table currentweek **************************************
-                cur.execute('SELECT Count() FROM %s' % 'CurrentWeek')
+                cur.execute('SELECT Count() FROM CurrentWeek')
                 count = cur.fetchone()[0]
 
                 if count == 0:  # init case
@@ -155,7 +156,7 @@ class DataBase:
                             Mode, Index_HP, Index_HC, Diff_HP, Diff_HC, Diff_HPHC, Cumul_HP, Cumul_HC, Cumul_HPHC,\
                             UPLOADED) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
 
-                    cur.execute('SELECT * FROM CurrentWeek WHERE rowid = %s' % count)
+                    cur.execute('SELECT * FROM CurrentWeek WHERE rowid = %d' % count)
                     previous_data = cur.fetchone()
 
                     if previous_data['WeekDay_Number'] == nwdaynu:
@@ -178,39 +179,39 @@ class DataBase:
                         nchc = ndhc
                         nchphc = nchp + nchc
 
-                        #Erase table if we have recorded 2 days max
-                        cur.execute('SELECT * FROM Event WHERE rowid = %i' % 1)
-                        previous_data = cur.fetchone()
-                        day_counter = previous_data['Day_Counter'] + 1
-                        print "day_counter = %i" % day_counter
-                        if day_counter < 2:
-                            cur.execute('UPDATE  Event SET Day_Counter = %i WHERE rowid = 1' % day_counter)
-                        else:
-                            print "table cleaned"
-                            cur.execute('UPDATE  Event SET Plotly = %i WHERE rowid = %i' % (1, 1))
-                            cur.execute('UPDATE  Event SET Day_Counter = %i WHERE rowid = %i' % (0, 1))
-                            cur.execute('SELECT * FROM CurrentWeek WHERE rowid = %s' % 1)
-                            previous_data = cur.fetchone()['WeekDay_Number']
-                            cur.execute('DELETE FROM CurrentWeek WHERE WeekDay_Number = %i' % previous_data)
-                            cur.execute('VACUUM')  # #### VERY IMPORTANT ##### #
-
                         cur.execute(sqlquery, (nyear, nmonth, nday, nweekn, nwdaynu, ndayna, ndate,
                                                nhour, nmode, nhp, nhc, ndhp, ndhc, ndhphc, nchp, nchc, nchphc, 0))
+
+                        #Erase table if we have recorded 2 days max
+                        print "Current Day = %d" % previous_data['Day']
+                        cur.execute('SELECT * FROM Event WHERE rowid = %d' % 1)
+                        previous_data = cur.fetchone()
+                        day_counter = previous_data['Day_Counter']
+                        if day_counter < max_days:
+                            day_counter += 1
+                            cur.execute('UPDATE  Event SET Day_Counter = %d WHERE rowid = 1' % day_counter)
+                        else:
+                            cur.execute('UPDATE  Event SET Plotly = 1 WHERE rowid = 1')
+                            cur.execute('SELECT * FROM CurrentWeek WHERE rowid = 1')
+                            previous_data = cur.fetchone()['Day']
+                            cur.execute('DELETE FROM CurrentWeek WHERE Day = %d' % previous_data)
+                            print "Day %d removed" % previous_data
+                            cur.execute('VACUUM')  # #### VERY IMPORTANT ##### #
 
                     # ###############################  Day PROCESSING    ##############################################
                     cur.execute('SELECT Count() FROM Day')
                     count = cur.fetchone()[0]
-                    cur.execute('SELECT * FROM Day WHERE rowid = %s' % count)
+                    cur.execute('SELECT * FROM Day WHERE rowid = %d' % count)
                     previous_data = cur.fetchone()
 
                     if previous_data['Day'] == nday:
                         nchp = nhp - previous_data['Index_HP']
                         nchc = nhc - previous_data['Index_HC']
                         nchphc = nchp + nchc
-                        cur.execute('UPDATE  Day SET CUMUL_HP = %s WHERE rowid = %s' % (nchp, count))
-                        cur.execute('UPDATE  Day SET CUMUL_HC = %s WHERE rowid = %s' % (nchc, count))
-                        cur.execute('UPDATE  Day SET CUMUL_HPHC = %s WHERE rowid = %s' % (nchphc, count))
-                        cur.execute('UPDATE  Day SET UPLOADED = %s WHERE rowid = %s' % (0, count))
+                        cur.execute('UPDATE  Day SET CUMUL_HP = %d WHERE rowid = %d' % (nchp, count))
+                        cur.execute('UPDATE  Day SET CUMUL_HC = %d WHERE rowid = %d' % (nchc, count))
+                        cur.execute('UPDATE  Day SET CUMUL_HPHC = %d WHERE rowid = %d' % (nchphc, count))
+                        cur.execute('UPDATE  Day SET UPLOADED = %d WHERE rowid = %d' % (0, count))
                     else:
                         # new Day
                         nchp = previous_data['Index_HP'] + previous_data['Cumul_HP']
@@ -223,17 +224,17 @@ class DataBase:
                     # ###############################  Week PROCESSING    ##############################################
                     cur.execute('SELECT Count() FROM Week')
                     count = cur.fetchone()[0]
-                    cur.execute('SELECT * FROM Week WHERE rowid = %s' % count)
+                    cur.execute('SELECT * FROM Week WHERE rowid = %d' % count)
                     previous_data = cur.fetchone()
 
                     if previous_data['Week_Number'] == nweekn:
                         nchp = nhp - previous_data['Index_HP']
                         nchc = nhc - previous_data['Index_HC']
                         nchphc = nchp + nchc
-                        cur.execute('UPDATE  Week SET CUMUL_HP = %s WHERE rowid = %s' % (nchp, count))
-                        cur.execute('UPDATE  Week SET CUMUL_HC = %s WHERE rowid = %s' % (nchc, count))
-                        cur.execute('UPDATE  Week SET CUMUL_HPHC = %s WHERE rowid = %s' % (nchphc, count))
-                        cur.execute('UPDATE  Week SET UPLOADED = %s WHERE rowid = %s' % (0, count))
+                        cur.execute('UPDATE  Week SET CUMUL_HP = %d WHERE rowid = %d' % (nchp, count))
+                        cur.execute('UPDATE  Week SET CUMUL_HC = %d WHERE rowid = %d' % (nchc, count))
+                        cur.execute('UPDATE  Week SET CUMUL_HPHC = %d WHERE rowid = %d' % (nchphc, count))
+                        cur.execute('UPDATE  Week SET UPLOADED = %d WHERE rowid = %d' % (0, count))
                     else:
                         # new week
                         nchp = previous_data['Index_HP'] + previous_data['Cumul_HP']
@@ -247,25 +248,25 @@ class DataBase:
                         #     Remove Week in the CurrentWeek table
                         # ----------------------------------------------------------------------------
                         '''if count > maxweek:
-                            cur.execute('SELECT * FROM Week WHERE rowid = %s' % count)
+                            cur.execute('SELECT * FROM Week WHERE rowid = %d' % count)
                             last_week = cur.fetchone()['Week_Number'] - maxweek
-                            cur.execute('DELETE FROM CurrentWeek WHERE Week_Number = %s' % last_week)
+                            cur.execute('DELETE FROM CurrentWeek WHERE Week_Number = %d' % last_week)
                             cur.execute('VACUUM')  # #### VERY IMPORTANT ##### #
                             event_clean = 1'''
 
                     # ###############################  Month PROCESSING    ##############################################
                     cur.execute('SELECT Count() FROM Month')
                     count = cur.fetchone()[0]
-                    cur.execute('SELECT * FROM Month WHERE rowid = %s' % count)
+                    cur.execute('SELECT * FROM Month WHERE rowid = %d' % count)
                     previous_data = cur.fetchone()
                     if previous_data['Month'] == nmonth:
                         nchp = nhp - previous_data['Index_HP']
                         nchc = nhc - previous_data['Index_HC']
                         nchphc = nchp + nchc
-                        cur.execute('UPDATE  Month SET CUMUL_HP = %s WHERE rowid = %s' % (nchp, count))
-                        cur.execute('UPDATE  Month SET CUMUL_HC = %s WHERE rowid = %s' % (nchc, count))
-                        cur.execute('UPDATE  Month SET CUMUL_HPHC = %s WHERE rowid = %s' % (nchphc, count))
-                        cur.execute('UPDATE  Month SET UPLOADED = %s WHERE rowid = %s' % (0, count))
+                        cur.execute('UPDATE  Month SET CUMUL_HP = %d WHERE rowid = %d' % (nchp, count))
+                        cur.execute('UPDATE  Month SET CUMUL_HC = %d WHERE rowid = %d' % (nchc, count))
+                        cur.execute('UPDATE  Month SET CUMUL_HPHC = %d WHERE rowid = %d' % (nchphc, count))
+                        cur.execute('UPDATE  Month SET UPLOADED = %d WHERE rowid = %d' % (0, count))
                     else:
                         # new month
                         nchp = previous_data['Index_HP'] + previous_data['Cumul_HP']
@@ -278,17 +279,17 @@ class DataBase:
                     # ###############################  Year PROCESSING    ##############################################
                     cur.execute('SELECT Count() FROM Year')
                     count = cur.fetchone()[0]
-                    cur.execute('SELECT * FROM Year WHERE rowid = %s' % count)
+                    cur.execute('SELECT * FROM Year WHERE rowid = %d' % count)
                     previous_data = cur.fetchone()
 
                     if previous_data['Year'] == nyear:
                         nchp = nhp - previous_data['Index_HP']
                         nchc = nhc - previous_data['Index_HC']
                         nchphc = nchp + nchc
-                        cur.execute('UPDATE  Year SET CUMUL_HP = %s WHERE rowid = %s' % (nchp, count))
-                        cur.execute('UPDATE  Year SET CUMUL_HC = %s WHERE rowid = %s' % (nchc, count))
-                        cur.execute('UPDATE  Year SET CUMUL_HPHC = %s WHERE rowid = %s' % (nchphc, count))
-                        cur.execute('UPDATE  Year SET UPLOADED = %s WHERE rowid = %s' % (0, count))
+                        cur.execute('UPDATE  Year SET CUMUL_HP = %d WHERE rowid = %d' % (nchp, count))
+                        cur.execute('UPDATE  Year SET CUMUL_HC = %d WHERE rowid = %d' % (nchc, count))
+                        cur.execute('UPDATE  Year SET CUMUL_HPHC = %d WHERE rowid = %d' % (nchphc, count))
+                        cur.execute('UPDATE  Year SET UPLOADED = %d WHERE rowid = %d' % (0, count))
                     else:
                         # new year
                         nchp = previous_data['Index_HP'] + previous_data['Cumul_HP']
@@ -316,27 +317,27 @@ class DataBase:
             cur = conn.cursor()
 
             # Search the first rowid with uploaded = 0   ****************
-            cur.execute('SELECT Count() FROM %s' % 'CurrentWeek')
+            cur.execute('SELECT Count() FROM %d' % 'CurrentWeek')
             count = cur.fetchone()[0]
             for x in range(1, count+1):
-                cur.execute('UPDATE  CurrentWeek SET UPLOADED = %s WHERE rowid = %s' % (0, x))
+                cur.execute('UPDATE  CurrentWeek SET UPLOADED = %d WHERE rowid = %d' % (0, x))
 
-            cur.execute('SELECT Count() FROM %s' % 'Day')
+            cur.execute('SELECT Count() FROM %d' % 'Day')
             count = cur.fetchone()[0]
             for x in range(1, count+1):
-                cur.execute('UPDATE  Day SET UPLOADED = %s WHERE rowid = %s' % (0, x))
+                cur.execute('UPDATE  Day SET UPLOADED = %d WHERE rowid = %d' % (0, x))
 
-            cur.execute('SELECT Count() FROM %s' % 'Week')
+            cur.execute('SELECT Count() FROM %d' % 'Week')
             count = cur.fetchone()[0]
             for x in range(1, count+1):
-                cur.execute('UPDATE  Week SET UPLOADED = %s WHERE rowid = %s' % (0, x))
+                cur.execute('UPDATE  Week SET UPLOADED = %d WHERE rowid = %d' % (0, x))
 
-            cur.execute('SELECT Count() FROM %s' % 'Month')
+            cur.execute('SELECT Count() FROM %d' % 'Month')
             count = cur.fetchone()[0]
             for x in range(1, count+1):
-                cur.execute('UPDATE  Month SET UPLOADED = %s WHERE rowid = %s' % (0, x))
+                cur.execute('UPDATE  Month SET UPLOADED = %d WHERE rowid = %d' % (0, x))
 
-            cur.execute('SELECT Count() FROM %s' % 'Year')
+            cur.execute('SELECT Count() FROM %d' % 'Year')
             count = cur.fetchone()[0]
             for x in range(1, count+1):
-                cur.execute('UPDATE  Year SET UPLOADED = %s WHERE rowid = %s' % (0, x))
+                cur.execute('UPDATE  Year SET UPLOADED = %d WHERE rowid = %d' % (0, x))
