@@ -98,7 +98,7 @@ class PlotlyPlot:
                     trace1 = Bar(x=x1range, y=hp_range, name='HP')
                     trace2 = Bar(x=x1range, y=hc_range, name='HC')
                     dataobj = Data([trace1, trace2])
-                    layout = Layout(title='CurrentDay', barmode='stack', yaxis=YAxis(title='Watt'))
+                    layout = Layout(title='CurrentDay', barmode='stack', yaxis=YAxis(title='Watt'), xaxis=XAxis(title='Hour'))
                     fig = Figure(data=dataobj, layout=layout)
                     requests.packages.urllib3.disable_warnings()
                     cur.execute('SELECT * FROM Event WHERE rowid = 1')
@@ -106,10 +106,10 @@ class PlotlyPlot:
                     try:
                         tls.get_credentials_file()
                         if plotly_overwrite:
-                            py.plot(fig, filename='CurrentWeek_Diff', fileopt='overwrite', auto_open=False)
+                            py.plot(fig, filename='CurrentDay', fileopt='overwrite', auto_open=False)
                             cur.execute('UPDATE  Event SET Plotly = 0 WHERE rowid = 1')
                         else:
-                            py.plot(fig, filename='CurrentWeek_Diff', fileopt='extend', auto_open=False)
+                            py.plot(fig, filename='CurrentDay', fileopt='extend', auto_open=False)
                     except exceptions.PlotlyConnectionError:
                         log_error("plotly error in Diff methode plotly_currentweek()  ")
                         exit()

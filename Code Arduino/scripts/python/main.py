@@ -6,7 +6,7 @@ import random
 import os.path
 import sys
 from cloudscope import oauth2_build
-from database import DataBase
+from sqlcode import SqlBase
 from timefunc import TimeFunc
 from plotlyplot import PlotlyPlot
 
@@ -87,11 +87,11 @@ if __name__ == '__main__':
             os.remove(dbname)
             print "database removed"
         for x in range(0, 490):
-            evt = DataBase.update(dbname, test, datalist_test())
-        #PlotlyPlot.plot(dbname)
+            evt = SqlBase.update(dbname, test, datalist_test())
+        PlotlyPlot.plot(dbname)
     else:
         dbname = '/root/python/database.db'
-        DataBase.update(dbname, test, sys.argv[1:])
+        SqlBase.update(dbname, test, sys.argv[1:])
         PlotlyPlot.plot(dbname)
 
 
