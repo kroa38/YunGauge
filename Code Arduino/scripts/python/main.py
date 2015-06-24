@@ -82,16 +82,20 @@ if __name__ == '__main__':
     test = 1
 
     if test == 1:
+        print "Test Mode"
         dbname = 'database.db'
         if os.path.isfile(dbname):
             os.remove(dbname)
-            print "database removed"
-        for x in range(0, 490):
-            evt = SqlBase.update(dbname, test, datalist_test())
-        PlotlyPlot.plot(dbname)
+            print "database erased"
+        for x in range(0, 9):
+            SqlBase.update(dbname, test, datalist_test())
+        print "database updated"
+        PlotlyPlot.plot(dbname, test)
+        print "Plotly updated"
     else:
         dbname = '/root/python/database.db'
         SqlBase.update(dbname, test, sys.argv[1:])
-        PlotlyPlot.plot(dbname)
+        PlotlyPlot.plot(dbname, test)
+
 
 

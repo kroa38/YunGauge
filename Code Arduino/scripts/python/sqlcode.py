@@ -105,7 +105,6 @@ class SqlBase:
 
             with conn:
                 # connect database in dictionary mode
-                event_clean = 0
 
                 conn.row_factory = sqlite3.Row
                 cur = conn.cursor()
@@ -297,8 +296,6 @@ class SqlBase:
                                     VALUES(?,?,?,?,?,?,?)'
                         cur.execute(sqlquery, (nyear, nchp, nchc, 0, 0, 0, 0))
 
-            return event_clean
-
         except sqlite3.Error:
             log_error("Error database access in database_update()")
             exit()
@@ -339,3 +336,4 @@ class SqlBase:
             count = cur.fetchone()[0]
             for x in range(1, count+1):
                 cur.execute('UPDATE  Year SET UPLOADED = %d WHERE rowid = %d' % (0, x))
+

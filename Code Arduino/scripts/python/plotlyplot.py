@@ -22,7 +22,7 @@ class PlotlyPlot:
         pass
 
     @staticmethod
-    def plot(dbname):
+    def plot(dbname, test):
         """
         Send to plotly the data
         :param dbname
@@ -30,8 +30,9 @@ class PlotlyPlot:
         """
         try:
             # for unlock websense (quiet and delete after download)
-            os.system("wget -q --delete-after www.google.fr")
-            _ = urllib2.urlopen('http://www.google.fr/', timeout=4)
+            if not test:
+                os.system("wget -q --delete-after www.google.fr")
+                _ = urllib2.urlopen('http://www.google.fr/', timeout=4)
 
             PlotlyPlot.currentweek(dbname)
             PlotlyPlot.day(dbname)
@@ -106,10 +107,10 @@ class PlotlyPlot:
                     try:
                         tls.get_credentials_file()
                         if plotly_overwrite:
-                            py.plot(fig, filename='CurrentDay', fileopt='overwrite', auto_open=False)
+                            py.plot(fig, filename='Teleinfo/CurrentDay', fileopt='overwrite', auto_open=False)
                             cur.execute('UPDATE  Event SET Plotly = 0 WHERE rowid = 1')
                         else:
-                            py.plot(fig, filename='CurrentDay', fileopt='extend', auto_open=False)
+                            py.plot(fig, filename='Teleinfo/CurrentDay', fileopt='extend', auto_open=False)
                     except exceptions.PlotlyConnectionError:
                         log_error("plotly error in Diff methode plotly_currentweek()  ")
                         exit()
@@ -129,7 +130,7 @@ class PlotlyPlot:
                     requests.packages.urllib3.disable_warnings()
                     try:
                         tls.get_credentials_file()
-                        py.plot(fig, filename='Today_Cumul', fileopt='overwrite', auto_open=False)
+                        py.plot(fig, filename='Teleinfo/Today_Cumul', fileopt='overwrite', auto_open=False)
                         for count in range(count_start, count_end+1):
                             cur.execute('UPDATE  CurrentWeek SET UPLOADED = %d WHERE rowid = %d' % (1, count))
                     except exceptions.PlotlyConnectionError:
@@ -193,7 +194,7 @@ class PlotlyPlot:
                     requests.packages.urllib3.disable_warnings()
                     try:
                         tls.get_credentials_file()
-                        py.plot(fig, filename='Day', fileopt='overwrite', auto_open=False)
+                        py.plot(fig, filename='Teleinfo/Day', fileopt='overwrite', auto_open=False)
                         for count in range(count_start, count_end+1):
                             cur.execute('UPDATE  CurrentWeek SET UPLOADED = %d WHERE rowid = %d' % (1, count))
                     except exceptions.PlotlyConnectionError:
@@ -257,7 +258,7 @@ class PlotlyPlot:
                     requests.packages.urllib3.disable_warnings()
                     try:
                         tls.get_credentials_file()
-                        py.plot(fig, filename='Week', fileopt='overwrite', auto_open=False)
+                        py.plot(fig, filename='Teleinfo/Week', fileopt='overwrite', auto_open=False)
                         for count in range(count_start, count_end+1):
                             cur.execute('UPDATE  CurrentWeek SET UPLOADED = %d WHERE rowid = %d' % (1, count))
                     except exceptions.PlotlyConnectionError:
@@ -321,7 +322,7 @@ class PlotlyPlot:
                     requests.packages.urllib3.disable_warnings()
                     try:
                         tls.get_credentials_file()
-                        py.plot(fig, filename='Month', fileopt='overwrite', auto_open=False)
+                        py.plot(fig, filename='Teleinfo/Month', fileopt='overwrite', auto_open=False)
                         for count in range(count_start, count_end+1):
                             cur.execute('UPDATE  CurrentWeek SET UPLOADED = %d WHERE rowid = %d' % (1, count))
                     except exceptions.PlotlyConnectionError:
@@ -386,7 +387,7 @@ class PlotlyPlot:
                     requests.packages.urllib3.disable_warnings()
                     try:
                         tls.get_credentials_file()
-                        py.plot(fig, filename='Year', fileopt='overwrite', auto_open=False)
+                        py.plot(fig, filename='Teleinfo/Year', fileopt='overwrite', auto_open=False)
                         for count in range(count_start, count_end+1):
                             cur.execute('UPDATE  CurrentWeek SET UPLOADED = %d WHERE rowid = %d' % (1, count))
                     except exceptions.PlotlyConnectionError:
