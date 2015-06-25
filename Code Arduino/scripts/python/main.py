@@ -93,9 +93,8 @@ if __name__ == '__main__':
         PlotlyPlot.plot(dbname, test)
         print "Plotly updated"
     else:
-        dbname = '/root/python/database.db'
+        dbname = '/root/python/yun_database.db'
         SqlBase.update(dbname, test, sys.argv[1:])
         PlotlyPlot.plot(dbname, test)
-
 
 

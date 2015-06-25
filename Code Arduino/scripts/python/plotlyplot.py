@@ -34,23 +34,27 @@ class PlotlyPlot:
                 os.system("wget -q --delete-after www.google.fr")
                 _ = urllib2.urlopen('http://www.google.fr/', timeout=4)
 
-            PlotlyPlot.currentweek(dbname)
-            PlotlyPlot.day(dbname)
-            PlotlyPlot.week(dbname)
-            PlotlyPlot.month(dbname)
-            PlotlyPlot.year(dbname)
+            PlotlyPlot.currentweek(dbname, test)
+            PlotlyPlot.day(dbname, test)
+            PlotlyPlot.week(dbname, test)
+            PlotlyPlot.month(dbname, test)
+            PlotlyPlot.year(dbname, test)
 
         except urllib2.URLError:
             pass
 
     @staticmethod
-    def currentweek(dbname):
+    def currentweek(dbname, test):
         """
         Send to plotly the currentweek tabel from the database
         update flag into the database if data uploaded
         :param dbname
         :return:   none
         """
+        if test:
+            plotlyfolder = 'test/CurrentDay'
+        else:
+            plotlyfolder = 'Teleinfo/CurrentDay'
         try:
             conn = sqlite3.connect(dbname)
 
@@ -104,13 +108,14 @@ class PlotlyPlot:
                     requests.packages.urllib3.disable_warnings()
                     cur.execute('SELECT * FROM Event WHERE rowid = 1')
                     plotly_overwrite = cur.fetchone()['Plotly']
+
                     try:
                         tls.get_credentials_file()
                         if plotly_overwrite:
-                            py.plot(fig, filename='Teleinfo/CurrentDay', fileopt='overwrite', auto_open=False)
+                            py.plot(fig, filename=plotlyfolder, fileopt='overwrite', auto_open=False)
                             cur.execute('UPDATE  Event SET Plotly = 0 WHERE rowid = 1')
                         else:
-                            py.plot(fig, filename='Teleinfo/CurrentDay', fileopt='extend', auto_open=False)
+                            py.plot(fig, filename=plotlyfolder, fileopt='extend', auto_open=False)
                     except exceptions.PlotlyConnectionError:
                         log_error("plotly error in Diff methode plotly_currentweek()  ")
                         exit()
@@ -130,7 +135,7 @@ class PlotlyPlot:
                     requests.packages.urllib3.disable_warnings()
                     try:
                         tls.get_credentials_file()
-                        py.plot(fig, filename='Teleinfo/Today_Cumul', fileopt='overwrite', auto_open=False)
+                        py.plot(fig, filename=plotlyfolder, fileopt='overwrite', auto_open=False)
                         for count in range(count_start, count_end+1):
                             cur.execute('UPDATE  CurrentWeek SET UPLOADED = %d WHERE rowid = %d' % (1, count))
                     except exceptions.PlotlyConnectionError:
@@ -142,12 +147,17 @@ class PlotlyPlot:
             # print "Error %s:" % e.args[0]
 
     @staticmethod
-    def day(dbname):
+    def day(dbname, test):
         """
         Send to plotly the day table from the database
         update flag into the database if data uploaded
         :return:   none
         """
+        if test:
+            plotlyfolder = 'test/Day'
+        else:
+            plotlyfolder = 'Teleinfo/Day'
+
         try:
             conn = sqlite3.connect(dbname)
 
@@ -194,7 +204,7 @@ class PlotlyPlot:
                     requests.packages.urllib3.disable_warnings()
                     try:
                         tls.get_credentials_file()
-                        py.plot(fig, filename='Teleinfo/Day', fileopt='overwrite', auto_open=False)
+                        py.plot(fig, filename=plotlyfolder, fileopt='overwrite', auto_open=False)
                         for count in range(count_start, count_end+1):
                             cur.execute('UPDATE  CurrentWeek SET UPLOADED = %d WHERE rowid = %d' % (1, count))
                     except exceptions.PlotlyConnectionError:
@@ -206,12 +216,17 @@ class PlotlyPlot:
             # print "Error %s:" % e.args[0]
 
     @staticmethod
-    def week(dbname):
+    def week(dbname, test):
         """
         Send to plotly the week table from the database
         update flag into the database if data uploaded
         :return:   none
         """
+        if test:
+            plotlyfolder = 'test/Week'
+        else:
+            plotlyfolder = 'Teleinfo/Week'
+
         try:
             conn = sqlite3.connect(dbname)
 
@@ -258,7 +273,7 @@ class PlotlyPlot:
                     requests.packages.urllib3.disable_warnings()
                     try:
                         tls.get_credentials_file()
-                        py.plot(fig, filename='Teleinfo/Week', fileopt='overwrite', auto_open=False)
+                        py.plot(fig, filename=plotlyfolder, fileopt='overwrite', auto_open=False)
                         for count in range(count_start, count_end+1):
                             cur.execute('UPDATE  CurrentWeek SET UPLOADED = %d WHERE rowid = %d' % (1, count))
                     except exceptions.PlotlyConnectionError:
@@ -270,12 +285,17 @@ class PlotlyPlot:
             # print "Error %s:" % e.args[0]
 
     @staticmethod
-    def month(dbname):
+    def month(dbname, test):
         """
         Send to plotly the month table from the database
         update flag into the database if data uploaded
         :return:   none
         """
+        if test:
+            plotlyfolder = 'test/Month'
+        else:
+            plotlyfolder = 'Teleinfo/Month'
+
         try:
             conn = sqlite3.connect(dbname)
 
@@ -322,7 +342,7 @@ class PlotlyPlot:
                     requests.packages.urllib3.disable_warnings()
                     try:
                         tls.get_credentials_file()
-                        py.plot(fig, filename='Teleinfo/Month', fileopt='overwrite', auto_open=False)
+                        py.plot(fig, filename=plotlyfolder, fileopt='overwrite', auto_open=False)
                         for count in range(count_start, count_end+1):
                             cur.execute('UPDATE  CurrentWeek SET UPLOADED = %d WHERE rowid = %d' % (1, count))
                     except exceptions.PlotlyConnectionError:
@@ -334,13 +354,18 @@ class PlotlyPlot:
             # print "Error %s:" % e.args[0]
 
     @staticmethod
-    def year(dbname):
+    def year(dbname, test):
         """
         Send to plotly the year table from the database
         update flag into the database if data uploaded
         :param
         :return:   none
         """
+        if test:
+            plotlyfolder = 'test/Year'
+        else:
+            plotlyfolder = 'Teleinfo/Year'
+
         try:
             conn = sqlite3.connect(dbname)
 
@@ -387,7 +412,7 @@ class PlotlyPlot:
                     requests.packages.urllib3.disable_warnings()
                     try:
                         tls.get_credentials_file()
-                        py.plot(fig, filename='Teleinfo/Year', fileopt='overwrite', auto_open=False)
+                        py.plot(fig, filename=plotlyfolder, fileopt='overwrite', auto_open=False)
                         for count in range(count_start, count_end+1):
                             cur.execute('UPDATE  CurrentWeek SET UPLOADED = %d WHERE rowid = %d' % (1, count))
                     except exceptions.PlotlyConnectionError:

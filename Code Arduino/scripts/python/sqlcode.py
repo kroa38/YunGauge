@@ -137,10 +137,10 @@ class SqlBase:
                                 VALUES(?,?,?,?,?,?,?)'
                     cur.execute(sqlquery, (nyear, nhp, nhc, 0, 0, 0, 0))
 
-                    sqlquery = 'INSERT INTO Day (Year, Month, Day, \
+                    sqlquery = 'INSERT INTO Day (Year, Month, Day, Day_Name, \
                                 Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC, UPLOADED)\
-                                VALUES(?,?,?,?,?,?,?,?,?)'
-                    cur.execute(sqlquery, (nyear, nmonth, nday, nhp, nhc, 0, 0, 0, 0))
+                                VALUES(?,?,?,?,?,?,?,?,?,?)'
+                    cur.execute(sqlquery, (nyear, nmonth, nday, ndayna, nhp, nhc, 0, 0, 0, 0))
 
                     sqlquery = 'INSERT INTO Event (Plotly, Day_Counter) VALUES(?,?)'
                     cur.execute(sqlquery, (0, 0))
@@ -213,10 +213,10 @@ class SqlBase:
                         # new Day
                         nchp = previous_data['Index_HP'] + previous_data['Cumul_HP']
                         nchc = previous_data['Index_HC'] + previous_data['Cumul_HC']
-                        sqlquery = 'INSERT INTO Day (Year, Month, Day, \
+                        sqlquery = 'INSERT INTO Day (Year, Month, Day, Day_Name, \
                                     Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC, UPLOADED)\
-                                    VALUES(?,?,?,?,?,?,?,?,?)'
-                        cur.execute(sqlquery, (nyear, nmonth, nday, nchp, nchc, 0, 0, 0, 0))
+                                    VALUES(?,?,?,?,?,?,?,?,?,?)'
+                        cur.execute(sqlquery, (nyear, nmonth, nday, ndayna, nchp, nchc, 0, 0, 0, 0))
 
                     # ###############################  Week PROCESSING    ##############################################
                     cur.execute('SELECT Count() FROM Week')
@@ -312,27 +312,27 @@ class SqlBase:
             cur = conn.cursor()
 
             # Search the first rowid with uploaded = 0   ****************
-            cur.execute('SELECT Count() FROM %d' % 'CurrentWeek')
+            cur.execute('SELECT Count() FROM CurrentWeek')
             count = cur.fetchone()[0]
             for x in range(1, count+1):
                 cur.execute('UPDATE  CurrentWeek SET UPLOADED = %d WHERE rowid = %d' % (0, x))
 
-            cur.execute('SELECT Count() FROM %d' % 'Day')
+            cur.execute('SELECT Count() FROM Day')
             count = cur.fetchone()[0]
             for x in range(1, count+1):
                 cur.execute('UPDATE  Day SET UPLOADED = %d WHERE rowid = %d' % (0, x))
 
-            cur.execute('SELECT Count() FROM %d' % 'Week')
+            cur.execute('SELECT Count() FROM Week')
             count = cur.fetchone()[0]
             for x in range(1, count+1):
                 cur.execute('UPDATE  Week SET UPLOADED = %d WHERE rowid = %d' % (0, x))
 
-            cur.execute('SELECT Count() FROM %d' % 'Month')
+            cur.execute('SELECT Count() FROM Month')
             count = cur.fetchone()[0]
             for x in range(1, count+1):
                 cur.execute('UPDATE  Month SET UPLOADED = %d WHERE rowid = %d' % (0, x))
 
-            cur.execute('SELECT Count() FROM %d' % 'Year')
+            cur.execute('SELECT Count() FROM Year')
             count = cur.fetchone()[0]
             for x in range(1, count+1):
                 cur.execute('UPDATE  Year SET UPLOADED = %d WHERE rowid = %d' % (0, x))
