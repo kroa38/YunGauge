@@ -6,6 +6,7 @@
 #include <Process.h>
 #include <YunClient.h>
 #include <YunServer.h>
+#include <OneWire.h>
 
 #include <SoftwareSerial.h>
 #include <Wire.h>
@@ -38,6 +39,7 @@ struct Evenements
 Evenements Event = {0};
 RTC_DS1338 RTC;
 SoftwareSerial mySerial(10, 11); // RX, TX
+OneWire ds(8);  //DS18B20 Temperature chip i/o 8
 
 /********************************************************************************
 FONCTION SETUP
@@ -599,4 +601,73 @@ uint8_t Is_DST_Time(void)
   }
 
   return isdst;
+}
+
+String temperature(void)
+{
+
+  byte data[2];
+  byte addr[8];
+  word Tc_100;
+  word Whole;
+  word Fract;
+
+  ds.reset_search();
+  
+  if ( !ds.search(addr)) {
+      Serial.print("No more addresses.\n");
+      ds.reset_search();
+      return "99";
+  }
+  
+   if ( OneWire::crc8( addr, 7) != addr[7]) {
+      Serial.print("CRC is not valid!\n");
+      return "99";
+  }
+
+  ds.reset();
+  ds.select(addr);
+  ds.write(0x44,1);         // start conversion, with parasite power on at the end
+
+  delay(1000);     // maybe 750ms is enough, maybe not
+  // we might do a ds.depower() here, but the reset will take care of it.
+
+  ds.reset();
+  ds.select(addr);    
+  ds.write(0xBE);         // Read Scratchpad
+
+  for ( byte i = 0; i < 2; i++) {           // we need 9 bytes
+    data[i] = ds.read();
+  }
+ 
+  word LowByte = data[0];
+  word HighByte = data[1];
+  word TReading = (HighByte << 8) + LowByte;
+  word SignBit = TReading & 0x8000;  // test most sig bit
+  
+  if (SignBit) // negative
+  {
+    TReading = (TReading ^ 0xffff) + 1; // 2's comp
+  }
+  Tc_100 = (6 * TReading) + TReading / 4;    // multiply by (100 * 0.0625) or 6.25
+
+  Whole = Tc_100 / 100;  // separate off the whole and fractional portions
+  Fract = Tc_100 % 100;
+
+  String Result = "";
+  
+   if (SignBit) // If its negative
+  {
+     Result = "-";
+  }
+  Result += String(Whole,DEC);
+  Result += ".";
+  
+  if (Fract < 10)
+  {
+     Result += "0";
+  }
+  Result += String(Fract,DEC).substring(0,1);
+
+  return Result; 
 }

@@ -48,6 +48,7 @@ unsigned long timeInEpoch(void);
 uint8_t Is_DST_Time(void);
 void rtc_to_linino_date_update(void);
 void Srv_UpdateTeleinfoDb(String);
+String temperature(void);
 
 /********************************************************************************
 FUNCTION DECLARATION IN SERVICE

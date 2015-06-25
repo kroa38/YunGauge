@@ -297,6 +297,8 @@ void Srv_UpdateTeleinfoDb(void)
 { 
     if(Event.UpdateTeleinfoDb)
   {
+    dataString += " ";
+    dataString += temperature();
     Event.UpdateTeleinfoDb = 0;
     String Pytcde = "python /root/python/main.py ";
     Pytcde += dataString;
