@@ -602,7 +602,12 @@ uint8_t Is_DST_Time(void)
 
   return isdst;
 }
-
+/***********************************************************
+String temperature(void)
+Return temperature from attached DS18B20 sensor 
+in : none
+out : String (ex -12.2 or 27.1 or 99 for error)
+************************************************************/
 String temperature(void)
 {
 

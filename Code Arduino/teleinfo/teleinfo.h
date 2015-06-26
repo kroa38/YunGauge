@@ -1,7 +1,7 @@
 /********************************************************************************
 DEFINITIONS
 ********************************************************************************/
-#undef DEBUG                                     // sortie console pour debug
+#define DEBUG                                     // sortie console pour debug
 /*******************************************************************************/
 #define BUSYPIN 4                                 // n° de la pin Busy
 #define RTSPIN 6                                  // n° de la pin RTS (output)
@@ -10,7 +10,11 @@ DEFINITIONS
 /*******************************************************************************/
 #define HOUR_ADJUST_CHECK 50UL*60UL*1000UL        // interval check pour la maj de l'heure de internet (50 minutes)
 #define HOUR_ADJUST_CHECK_THIN 1UL*60UL*1000UL    // interval check pour la maj de l'heure de internet (10 minutes)
+#ifdef DEBUG
+#define WAITFORLININO  5                          // temps d'attente de démarrage de linino (mini 50s)
+#else
 #define WAITFORLININO  55                         // temps d'attente de démarrage de linino (mini 50s)
+#endif
 /*******************************************************************************/
 #define DS1338_NVRAM_REG_SAMPLING              0  // Adresse offset Nvram du DS1338 pour la periode d'échantillonage
 #define DS1338_NVRAM_REG_UART_RTS_TELEINFO     1  // RTS qui dit qu'un message teleinfo est reçu

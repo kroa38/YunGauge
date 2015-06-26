@@ -79,7 +79,7 @@ def datalist_test():
 '''
 if __name__ == '__main__':
 
-    test = 1
+    test = 0
 
     if test == 1:
         print "Test Mode"
@@ -93,8 +93,11 @@ if __name__ == '__main__':
         PlotlyPlot.plot(dbname, test)
         print "Plotly updated"
     else:
-        dbname = '/root/python/yun_database.db'
-        SqlBase.update(dbname, test, sys.argv[1:])
-        PlotlyPlot.plot(dbname, test)
 
+        #dbname = '/root/python/yun_database.db'
+        dbname = 'tutudatabase.db'
+        #print sys.argv[1:]
+        SqlBase.update(dbname, test, sys.argv[1:])
+        #PlotlyPlot.plot(dbname, test)
+        #SqlBase.minvalue(dbname)
 
