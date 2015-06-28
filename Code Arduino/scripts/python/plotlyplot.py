@@ -55,6 +55,7 @@ class PlotlyPlot:
             plotlyfolder = 'test/CurrentDay'
         else:
             plotlyfolder = 'Teleinfo/CurrentDay'
+            plotlyfoldert = 'Temperature/CurrentDay'
         try:
             conn = sqlite3.connect(dbname)
 
@@ -89,6 +90,7 @@ class PlotlyPlot:
                 if count_start:
                     hp_range = []
                     hc_range = []
+                    tin_range = []
                     x1range = []
 
                     # code for Diff_HP Diff_HC
@@ -98,13 +100,18 @@ class PlotlyPlot:
                         x1range.append(str(data['Hour']))
                         hp_range.append(data['Diff_HP'])
                         hc_range.append(data['Diff_HC'])
+                        tin_range.append(data['Temp_In'])
 
                     # upload data list to plotly
                     trace1 = Bar(x=x1range, y=hp_range, name='HP')
                     trace2 = Bar(x=x1range, y=hc_range, name='HC')
+                    trace3 = Scatter(x=x1range, y=tin_range, name='Temperature In', mode='lines+markers')
                     dataobj = Data([trace1, trace2])
+                    datatemp = Data(trace3)
                     layout = Layout(title='CurrentDay', barmode='stack', yaxis=YAxis(title='Watt'), xaxis=XAxis(title='Hour'))
+                    layoutemp = Layout(title='Temperature In',yaxis=YAxis(title='°C'), xaxis=XAxis(title='Hour'))
                     fig = Figure(data=dataobj, layout=layout)
+                    figtemp = Figure(data=datatemp, layout=layoutemp)
                     requests.packages.urllib3.disable_warnings()
                     cur.execute('SELECT * FROM Event WHERE rowid = 1')
                     plotly_overwrite = cur.fetchone()['Plotly']
@@ -113,9 +120,11 @@ class PlotlyPlot:
                         tls.get_credentials_file()
                         if plotly_overwrite:
                             py.plot(fig, filename=plotlyfolder, fileopt='overwrite', auto_open=False)
+                            py.plot(figtemp, filename=plotlyfoldert, fileopt='overwrite', auto_open=False)
                             cur.execute('UPDATE  Event SET Plotly = 0 WHERE rowid = 1')
                         else:
                             py.plot(fig, filename=plotlyfolder, fileopt='extend', auto_open=False)
+                            py.plot(figtemp, filename=plotlyfoldert, fileopt='extend', auto_open=False)
                     except exceptions.PlotlyConnectionError:
                         log_error("plotly error in Diff methode plotly_currentweek()  ")
                         exit()

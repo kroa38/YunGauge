@@ -168,7 +168,7 @@ class SqlBase:
                     cur.execute('SELECT * FROM CurrentWeek WHERE rowid = %d' % count)
                     previous_data = cur.fetchone()
 
-                    if previous_data['WeekDay_Number'] == nwdaynu+1:
+                    if previous_data['WeekDay_Number'] == nwdaynu:
                         # calculate the differencies if it is the same day
                         ndhp = nhp - previous_data['Index_HP']
                         ndhc = nhc - previous_data['Index_HC']
@@ -213,7 +213,7 @@ class SqlBase:
                     cur.execute('SELECT * FROM Day WHERE rowid = %d' % count)
                     previous_data = cur.fetchone()
 
-                    if previous_data['Day'] == nday+1:
+                    if previous_data['Day'] == nday:
                         # same day
                         nchp = nhp - previous_data['Index_HP']
                         nchc = nhc - previous_data['Index_HC']
@@ -226,9 +226,11 @@ class SqlBase:
                         cur.execute('SELECT MIN(Temp_In) FROM CurrentWeek where Day = %d' % nday)
                         ntemp = cur.fetchone()[0]
                         cur.execute('UPDATE Day SET Temp_In_Min = %f WHERE rowid = %d' % (ntemp, count))
+
                         cur.execute('SELECT AVG(Temp_In) FROM CurrentWeek where Day = %d' % nday)
                         ntemp = cur.fetchone()[0]
                         cur.execute('UPDATE Day SET Temp_In_Avg = %.1f WHERE rowid = %d' % (ntemp, count))
+
                         cur.execute('SELECT MAX(Temp_In) FROM CurrentWeek where Day = %d' % nday)
                         ntemp = cur.fetchone()[0]
                         cur.execute('UPDATE Day SET Temp_In_Max = %f WHERE rowid = %d' % (ntemp, count))
@@ -236,9 +238,11 @@ class SqlBase:
                         cur.execute('SELECT MIN(Temp_Out) FROM CurrentWeek where Day = %d' % nday)
                         ntemp = cur.fetchone()[0]
                         cur.execute('UPDATE Day SET Temp_Out_Min = %f WHERE rowid = %d' % (ntemp, count))
+
                         cur.execute('SELECT AVG(Temp_Out) FROM CurrentWeek where Day = %d' % nday)
                         ntemp = cur.fetchone()[0]
                         cur.execute('UPDATE Day SET Temp_Out_Avg = %.1f WHERE rowid = %d' % (ntemp, count))
+
                         cur.execute('SELECT MAX(Temp_Out) FROM CurrentWeek where Day = %d' % nday)
                         ntemp = cur.fetchone()[0]
                         cur.execute('UPDATE Day SET Temp_Out_Max = %f WHERE rowid = %d' % (ntemp, count))
