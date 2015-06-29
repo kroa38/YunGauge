@@ -6,6 +6,7 @@ import plotly.plotly as py
 import plotly.tools as tls
 import urllib2
 import os
+import time
 import requests  # Used for the warning InsecurePlatformWarning in python 2.7.3
 from plotly import exceptions
 from plotly.graph_objs import *
@@ -19,6 +20,7 @@ from cloudscope import log_error
 class PlotlyPlot:
 
     def __init__(self):
+
         pass
 
     @staticmethod
@@ -31,13 +33,19 @@ class PlotlyPlot:
         try:
             # for unlock websense (quiet and delete after download)
             if not test:
-                os.system("wget -q --delete-after www.google.fr")
-                _ = urllib2.urlopen('http://www.google.fr/', timeout=4)
+                os.system("wget -q --delete-after www.plot.ly")         # pour debloquer websense (quiet and delete after download.
+                _ = urllib2.urlopen('https://plot.ly/', timeout=4)
+                '''os.system("wget -q --delete-after www.google.fr")
+                _ = urllib2.urlopen('http://www.google.fr/', timeout=4)'''
 
             PlotlyPlot.currentweek(dbname, test)
+            time.sleep(5)
             PlotlyPlot.day(dbname, test)
+            time.sleep(5)
             PlotlyPlot.week(dbname, test)
+            time.sleep(5)
             PlotlyPlot.month(dbname, test)
+            time.sleep(5)
             PlotlyPlot.year(dbname, test)
 
         except urllib2.URLError:
@@ -52,10 +60,12 @@ class PlotlyPlot:
         :return:   none
         """
         if test:
-            plotlyfolder = 'test/CurrentDay'
+            teleinfo_folder = 'Test_Teleinfo/'
+            tin_folder = 'Test_Temperature_In/'
         else:
-            plotlyfolder = 'Teleinfo/CurrentDay'
-            plotlyfoldert = 'Temperature/CurrentDay'
+            teleinfo_folder = 'Teleinfo/'
+            tin_folder = 'Temperature_In/'
+
         try:
             conn = sqlite3.connect(dbname)
 
@@ -106,27 +116,27 @@ class PlotlyPlot:
                     trace1 = Bar(x=x1range, y=hp_range, name='HP')
                     trace2 = Bar(x=x1range, y=hc_range, name='HC')
                     trace3 = Scatter(x=x1range, y=tin_range, name='Temperature In', mode='lines+markers')
-                    dataobj = Data([trace1, trace2])
-                    datatemp = Data(trace3)
-                    layout = Layout(title='CurrentDay', barmode='stack', yaxis=YAxis(title='Watt'), xaxis=XAxis(title='Hour'))
-                    layoutemp = Layout(title='Temperature In',yaxis=YAxis(title='°C'), xaxis=XAxis(title='Hour'))
-                    fig = Figure(data=dataobj, layout=layout)
-                    figtemp = Figure(data=datatemp, layout=layoutemp)
+                    data_teleinfo = Data([trace1, trace2])
+                    data_tin = Data([trace3])
+                    layout_teleinfo = Layout(title='CurrentDay', barmode='stack', yaxis=YAxis(title='Watt'), xaxis=XAxis(title='Hour'))
+                    layout_tin = Layout(title='Temperature In', yaxis=YAxis(title='°C'), xaxis=XAxis(title='Hour'))
+                    fig_teleinfo = Figure(data=data_teleinfo, layout=layout_teleinfo)
+                    fig_tin = Figure(data=data_tin, layout=layout_tin)
                     requests.packages.urllib3.disable_warnings()
                     cur.execute('SELECT * FROM Event WHERE rowid = 1')
-                    plotly_overwrite = cur.fetchone()['Plotly']
+                    plotly_overwrite = cur.fetchone()['Plotly_Cw_Ovr']
 
                     try:
                         tls.get_credentials_file()
                         if plotly_overwrite:
-                            py.plot(fig, filename=plotlyfolder, fileopt='overwrite', auto_open=False)
-                            py.plot(figtemp, filename=plotlyfoldert, fileopt='overwrite', auto_open=False)
-                            cur.execute('UPDATE  Event SET Plotly = 0 WHERE rowid = 1')
+                            py.plot(fig_teleinfo, filename=teleinfo_folder + 'CurrentDay', fileopt='overwrite', auto_open=False)
+                            py.plot(fig_tin, filename=tin_folder + 'CurrentDay', fileopt='overwrite', auto_open=False)
+                            cur.execute('UPDATE Event SET Plotly_Cw_Ovr = 0 WHERE rowid = 1')
                         else:
-                            py.plot(fig, filename=plotlyfolder, fileopt='extend', auto_open=False)
-                            py.plot(figtemp, filename=plotlyfoldert, fileopt='extend', auto_open=False)
-                    except exceptions.PlotlyConnectionError:
-                        log_error("plotly error in Diff methode plotly_currentweek()  ")
+                            py.plot(fig_teleinfo, filename=teleinfo_folder + 'CurrentDay', fileopt='extend', auto_open=False)
+                            py.plot(fig_tin, filename=tin_folder + 'CurrentDay', fileopt='extend', auto_open=False)
+                    except exceptions, e:
+                        log_error(str(e))
                         exit()
 
                     # code for Cumul_HPHC
@@ -137,18 +147,18 @@ class PlotlyPlot:
                     hc_range = data['Cumul_HC']
                     trace1 = Bar(x=x1range, y=hp_range, name='HP')
                     trace2 = Bar(x=x1range, y=hc_range, name='HC')
-                    dataobj = Data([trace1, trace2])
-                    layout = Layout(title='Today Cumul', barmode='stack', yaxis=YAxis(title='Watt'),
-                                    xaxis=XAxis(title='Hour'))
-                    fig = Figure(data=dataobj, layout=layout)
+                    data_teleinfo = Data([trace1, trace2])
+                    layout_teleinfo = Layout(title='Today Cumul', barmode='stack', yaxis=YAxis(title='Watt'),
+                                             xaxis=XAxis(title='Hour'))
+                    fig_teleinfo = Figure(data=data_teleinfo, layout=layout_teleinfo)
                     requests.packages.urllib3.disable_warnings()
                     try:
                         tls.get_credentials_file()
-                        py.plot(fig, filename=plotlyfolder, fileopt='overwrite', auto_open=False)
+                        py.plot(fig_teleinfo, filename=teleinfo_folder + 'Today_Cumul', fileopt='overwrite', auto_open=False)
                         for count in range(count_start, count_end+1):
                             cur.execute('UPDATE  CurrentWeek SET UPLOADED = %d WHERE rowid = %d' % (1, count))
-                    except exceptions.PlotlyConnectionError:
-                        log_error("plotly error in plotly_currentweek() ")
+                    except exceptions, e:
+                        log_error(str(e))
                         exit()
         except sqlite3.Error:
             log_error("Error database access in plotly_CurrentWeek()")
@@ -163,9 +173,11 @@ class PlotlyPlot:
         :return:   none
         """
         if test:
-            plotlyfolder = 'test/Day'
+            teleinfo_folder = 'Test_Teleinfo/'
+            tin_folder = 'Test_Temperature_In/'
         else:
-            plotlyfolder = 'Teleinfo/Day'
+            teleinfo_folder = 'Teleinfo/'
+            tin_folder = 'Temperature_In/'
 
         try:
             conn = sqlite3.connect(dbname)
@@ -194,6 +206,9 @@ class PlotlyPlot:
                     hp_range = []
                     hc_range = []
                     x1range = []
+                    tin_min_range = []
+                    tin_avg_range = []
+                    tin_max_range = []
                     # code for Cumul_HP Cumul_HC
                     for count in range(count_start, count_end+1):
                         cur.execute('SELECT * FROM Day WHERE rowid = %d' % count)
@@ -201,23 +216,32 @@ class PlotlyPlot:
                         x1range.append(str(data['Day']) + "/" + str(data['Month']) + "/" + str(data['Year']))
                         hp_range.append(data['Cumul_HP'])
                         hc_range.append(data['Cumul_HC'])
-                        cur.execute('UPDATE  Day SET UPLOADED = %d WHERE rowid = %d' % (1, count))
+                        tin_min_range.append(data['Temp_In_Min'])
+                        tin_avg_range.append(data['Temp_In_Avg'])
+                        tin_max_range.append(data['Temp_In_Max'])
 
                     # upload data list to plotly
                     trace1 = Bar(x=x1range, y=hp_range, name='HP')
                     trace2 = Bar(x=x1range, y=hc_range, name='HC')
-                    dataobj = Data([trace1, trace2])
-                    layout = Layout(title='Days Cumul', barmode='stack', yaxis=YAxis(title='Watt'),
-                                    xaxis=XAxis(title='Date'))
-                    fig = Figure(data=dataobj, layout=layout)
+                    trace3 = Scatter(x=x1range, y=tin_min_range, name='Temperature In Min', mode='lines+markers')
+                    trace4 = Scatter(x=x1range, y=tin_avg_range, name='Temperature In Avg', mode='lines+markers')
+                    trace5 = Scatter(x=x1range, y=tin_max_range, name='Temperature In Max', mode='lines+markers')
+                    data_teleinfo = Data([trace1, trace2])
+                    data_tin = Data([trace3, trace4, trace5])
+                    layout_teleinfo = Layout(title='Days Cumul', barmode='stack', yaxis=YAxis(title='Watt'),
+                                             xaxis=XAxis(title='Date'))
+                    layout_tin = Layout(title='Temperature In', yaxis=YAxis(title='°C'), xaxis=XAxis(title='Hour'))
+                    fig_teleinfo = Figure(data=data_teleinfo, layout=layout_teleinfo)
+                    fig_tin = Figure(data=data_tin, layout=layout_tin)
                     requests.packages.urllib3.disable_warnings()
                     try:
                         tls.get_credentials_file()
-                        py.plot(fig, filename=plotlyfolder, fileopt='overwrite', auto_open=False)
+                        py.plot(fig_teleinfo, filename=teleinfo_folder + 'Day', fileopt='overwrite', auto_open=False)
+                        py.plot(fig_tin, filename=tin_folder + 'Day', fileopt='overwrite', auto_open=False)
                         for count in range(count_start, count_end+1):
-                            cur.execute('UPDATE  CurrentWeek SET UPLOADED = %d WHERE rowid = %d' % (1, count))
-                    except exceptions.PlotlyConnectionError:
-                        log_error("plotly error in plotly_day() ")
+                            cur.execute('UPDATE  Day SET UPLOADED = %d WHERE rowid = %d' % (1, count))
+                    except exceptions, e:
+                        log_error(str(e))
                         exit()
         except sqlite3.Error:
             log_error("Error database access in plotly_day()")
@@ -232,9 +256,11 @@ class PlotlyPlot:
         :return:   none
         """
         if test:
-            plotlyfolder = 'test/Week'
+            teleinfo_folder = 'Test_Teleinfo/'
+            tin_folder = 'Test_Temperature_In/'
         else:
-            plotlyfolder = 'Teleinfo/Week'
+            teleinfo_folder = 'Teleinfo/'
+            tin_folder = 'Temperature_In/'
 
         try:
             conn = sqlite3.connect(dbname)
@@ -263,6 +289,9 @@ class PlotlyPlot:
                     hp_range = []
                     hc_range = []
                     x1range = []
+                    tin_min_range = []
+                    tin_avg_range = []
+                    tin_max_range = []
                     # code for Cumul_HP Cumul_HC
                     for count in range(count_start, count_end+1):
                         cur.execute('SELECT * FROM Week WHERE rowid = %d' % count)
@@ -270,23 +299,32 @@ class PlotlyPlot:
                         x1range.append(str(data['Year']) + "W" + str(data['Week_Number']))
                         hp_range.append(data['Cumul_HP'])
                         hc_range.append(data['Cumul_HC'])
-                        cur.execute('UPDATE  Week SET UPLOADED = %d WHERE rowid = %d' % (1, count))
+                        tin_min_range.append(data['Temp_In_Min'])
+                        tin_avg_range.append(data['Temp_In_Avg'])
+                        tin_max_range.append(data['Temp_In_Max'])
 
                     # upload data list to plotly
                     trace1 = Bar(x=x1range, y=hp_range, name='HP')
                     trace2 = Bar(x=x1range, y=hc_range, name='HC')
-                    dataobj = Data([trace1, trace2])
-                    layout = Layout(title='Week Cumul', barmode='stack', yaxis=YAxis(title='Watt'),
-                                    xaxis=XAxis(title='Date'))
-                    fig = Figure(data=dataobj, layout=layout)
+                    trace3 = Scatter(x=x1range, y=tin_min_range, name='Temperature In Min', mode='lines+markers')
+                    trace4 = Scatter(x=x1range, y=tin_avg_range, name='Temperature In Avg', mode='lines+markers')
+                    trace5 = Scatter(x=x1range, y=tin_max_range, name='Temperature In Max', mode='lines+markers')
+                    data_teleinfo = Data([trace1, trace2])
+                    data_tin = Data([trace3, trace4, trace5])
+                    layout_teleinfo = Layout(title='Week Cumul', barmode='stack', yaxis=YAxis(title='Watt'),
+                                             xaxis=XAxis(title='Date'))
+                    layout_tin = Layout(title='Temperature In', yaxis=YAxis(title='°C'), xaxis=XAxis(title='Hour'))
+                    fig_teleinfo = Figure(data=data_teleinfo, layout=layout_teleinfo)
+                    fig_tin = Figure(data=data_tin, layout=layout_tin)
                     requests.packages.urllib3.disable_warnings()
                     try:
                         tls.get_credentials_file()
-                        py.plot(fig, filename=plotlyfolder, fileopt='overwrite', auto_open=False)
+                        py.plot(fig_teleinfo, filename=teleinfo_folder + 'Week', fileopt='overwrite', auto_open=False)
+                        py.plot(fig_tin, filename=tin_folder + 'Week', fileopt='overwrite', auto_open=False)
                         for count in range(count_start, count_end+1):
-                            cur.execute('UPDATE  CurrentWeek SET UPLOADED = %d WHERE rowid = %d' % (1, count))
-                    except exceptions.PlotlyConnectionError:
-                        log_error("plotly error in plotly_week() ")
+                            cur.execute('UPDATE Week SET UPLOADED = %d WHERE rowid = %d' % (1, count))
+                    except exceptions, e:
+                        log_error(str(e))
                         exit()
         except sqlite3.Error:
             log_error("Error database access in plotly_week()")
@@ -301,9 +339,11 @@ class PlotlyPlot:
         :return:   none
         """
         if test:
-            plotlyfolder = 'test/Month'
+            teleinfo_folder = 'Test_Teleinfo/'
+            tin_folder = 'Test_Temperature_In/'
         else:
-            plotlyfolder = 'Teleinfo/Month'
+            teleinfo_folder = 'Teleinfo/'
+            tin_folder = 'Temperature_In/'
 
         try:
             conn = sqlite3.connect(dbname)
@@ -332,6 +372,9 @@ class PlotlyPlot:
                     hp_range = []
                     hc_range = []
                     x1range = []
+                    tin_min_range = []
+                    tin_avg_range = []
+                    tin_max_range = []
                     # code for Cumul_HP Cumul_HC
                     for count in range(count_start, count_end+1):
                         cur.execute('SELECT * FROM Month WHERE rowid = %d' % count)
@@ -339,23 +382,32 @@ class PlotlyPlot:
                         x1range.append(str(data['Year']) + "-" + str(data['Month']))
                         hp_range.append(data['Cumul_HP'])
                         hc_range.append(data['Cumul_HC'])
-                        cur.execute('UPDATE  Month SET UPLOADED = %d WHERE rowid = %d' % (1, count))
+                        tin_min_range.append(data['Temp_In_Min'])
+                        tin_avg_range.append(data['Temp_In_Avg'])
+                        tin_max_range.append(data['Temp_In_Max'])
 
                     # upload data list to plotly
                     trace1 = Bar(x=x1range, y=hp_range, name='HP')
                     trace2 = Bar(x=x1range, y=hc_range, name='HC')
-                    dataobj = Data([trace1, trace2])
-                    layout = Layout(title='Month Cumul', barmode='stack', yaxis=YAxis(title='Watt'),
-                                    xaxis=XAxis(title='Year-Month'))
-                    fig = Figure(data=dataobj, layout=layout)
+                    trace3 = Scatter(x=x1range, y=tin_min_range, name='Temperature In Min', mode='lines+markers')
+                    trace4 = Scatter(x=x1range, y=tin_avg_range, name='Temperature In Avg', mode='lines+markers')
+                    trace5 = Scatter(x=x1range, y=tin_max_range, name='Temperature In Max', mode='lines+markers')
+                    data_teleinfo = Data([trace1, trace2])
+                    data_tin = Data([trace3, trace4, trace5])
+                    layout_teleinfo = Layout(title='Month Cumul', barmode='stack', yaxis=YAxis(title='Watt'),
+                                             xaxis=XAxis(title='Year-Month'))
+                    layout_tin = Layout(title='Temperature In', yaxis=YAxis(title='°C'), xaxis=XAxis(title='Hour'))
+                    fig_teleinfo = Figure(data=data_teleinfo, layout=layout_teleinfo)
+                    fig_tin = Figure(data=data_tin, layout=layout_tin)
                     requests.packages.urllib3.disable_warnings()
                     try:
                         tls.get_credentials_file()
-                        py.plot(fig, filename=plotlyfolder, fileopt='overwrite', auto_open=False)
+                        py.plot(fig_teleinfo, filename=teleinfo_folder + 'Month', fileopt='overwrite', auto_open=False)
+                        py.plot(fig_tin, filename=tin_folder + 'Month', fileopt='overwrite', auto_open=False)
                         for count in range(count_start, count_end+1):
-                            cur.execute('UPDATE  CurrentWeek SET UPLOADED = %d WHERE rowid = %d' % (1, count))
-                    except exceptions.PlotlyConnectionError:
-                        log_error("plotly error in plotly_month() ")
+                            cur.execute('UPDATE Month SET UPLOADED = %d WHERE rowid = %d' % (1, count))
+                    except exceptions, e:
+                        log_error(str(e))
                         exit()
         except sqlite3.Error:
             log_error("Error database access in plotly_month()")
@@ -371,9 +423,11 @@ class PlotlyPlot:
         :return:   none
         """
         if test:
-            plotlyfolder = 'test/Year'
+            teleinfo_folder = 'Test_Teleinfo/'
+            tin_folder = 'Test_Temperature_In/'
         else:
-            plotlyfolder = 'Teleinfo/Year'
+            teleinfo_folder = 'Teleinfo/'
+            tin_folder = 'Temperature_In/'
 
         try:
             conn = sqlite3.connect(dbname)
@@ -402,6 +456,9 @@ class PlotlyPlot:
                     hp_range = []
                     hc_range = []
                     x1range = []
+                    tin_min_range = []
+                    tin_avg_range = []
+                    tin_max_range = []
                     # code for Cumul_HP Cumul_HC
                     for count in range(count_start, count_end+1):
                         cur.execute('SELECT * FROM Year WHERE rowid = %d' % count)
@@ -409,26 +466,34 @@ class PlotlyPlot:
                         x1range.append(str(data['Year']))
                         hp_range.append(data['Cumul_HP'])
                         hc_range.append(data['Cumul_HC'])
-                        cur.execute('UPDATE  Year SET UPLOADED = %d WHERE rowid = %d' % (1, count))
+                        tin_min_range.append(data['Temp_In_Min'])
+                        tin_avg_range.append(data['Temp_In_Avg'])
+                        tin_max_range.append(data['Temp_In_Max'])
 
                     # upload data list to plotly
                     trace1 = Bar(x=x1range, y=hp_range, name='HP')
                     trace2 = Bar(x=x1range, y=hc_range, name='HC')
-                    dataobj = Data([trace1, trace2])
-                    layout = Layout(title='Year Cumul', barmode='stack', yaxis=YAxis(title='Watt'),
-                                    xaxis=XAxis(title='Year'))
-                    fig = Figure(data=dataobj, layout=layout)
+                    trace3 = Scatter(x=x1range, y=tin_min_range, name='Temperature In Min', mode='lines+markers')
+                    trace4 = Scatter(x=x1range, y=tin_avg_range, name='Temperature In Avg', mode='lines+markers')
+                    trace5 = Scatter(x=x1range, y=tin_max_range, name='Temperature In Max', mode='lines+markers')
+                    data_teleinfo = Data([trace1, trace2])
+                    data_tin = Data([trace3, trace4, trace5])
+                    layout_teleinfo = Layout(title='Year Cumul', barmode='stack', yaxis=YAxis(title='Watt'),
+                                             xaxis=XAxis(title='Year'))
+                    layout_tin = Layout(title='Temperature In', yaxis=YAxis(title='°C'), xaxis=XAxis(title='Hour'))
+                    fig_teleinfo = Figure(data=data_teleinfo, layout=layout_teleinfo)
+                    fig_tin = Figure(data=data_tin, layout=layout_tin)
                     requests.packages.urllib3.disable_warnings()
                     try:
                         tls.get_credentials_file()
-                        py.plot(fig, filename=plotlyfolder, fileopt='overwrite', auto_open=False)
+                        py.plot(fig_teleinfo, filename=teleinfo_folder + 'Year', fileopt='overwrite', auto_open=False)
+                        py.plot(fig_tin, filename=tin_folder + 'Year', fileopt='overwrite', auto_open=False)
                         for count in range(count_start, count_end+1):
-                            cur.execute('UPDATE  CurrentWeek SET UPLOADED = %d WHERE rowid = %d' % (1, count))
-                    except exceptions.PlotlyConnectionError:
-                        log_error("plotly error in plotly_year() ")
+                            cur.execute('UPDATE  Year SET UPLOADED = %d WHERE rowid = %d' % (1, count))
+                    except exceptions, e:
+                        log_error(str(e))
                         exit()
         except sqlite3.Error:
             log_error("Error database access in plotly_year()")
             exit()
             # print "Error %s:" % e.args[0]
-

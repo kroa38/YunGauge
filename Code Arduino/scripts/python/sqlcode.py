@@ -57,7 +57,7 @@ class SqlBase:
                                 Temp_In_Min REAL, Temp_In_Avg REAL, Temp_In_Max REAL,\
                                 Temp_Out_Min REAL, Temp_Out_Avg REAL, Temp_Out_Max REAL, UPLOADED INTEGER);')
                     # create a table for events
-                    cur.execute('CREATE TABLE Event(Plotly INTEGER, Day_Counter INTEGER);')
+                    cur.execute('CREATE TABLE Event(Plotly_Cw_Ovr INTEGER, Day_Counter INTEGER);')
 
             except sqlite3.Error, e:
                 log_error("Error when try to create database in create_database() ")
@@ -80,8 +80,8 @@ class SqlBase:
             nhp = dataliste[0]
             nhc = dataliste[1]
             nmode = dataliste[2]
-            ntimestamp = dataliste[3]
-            tin = 99
+            tin = dataliste[3]
+            ntimestamp = dataliste[4]
             tout = 99
             nepoch = TimeFunc.iso8601_to_epoch(ntimestamp)
             ndayna = TimeFunc.epoch_to_weekday_name(nepoch)
@@ -154,7 +154,7 @@ class SqlBase:
                                 Temp_Out_Min, Temp_Out_Avg, Temp_Out_Max, UPLOADED) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
                     cur.execute(sqlquery, (nyear, nmonth, nday, ndayna, nweekn, nhp, nhc, 0, 0, 0, tin, tin, tin, tout, tout, tout, 0))
 
-                    sqlquery = 'INSERT INTO Event (Plotly, Day_Counter) VALUES(?,?)'
+                    sqlquery = 'INSERT INTO Event (Plotly_Cw_Ovr, Day_Counter) VALUES(?,?)'
                     cur.execute(sqlquery, (0, 0))
 
                 else:
@@ -200,7 +200,7 @@ class SqlBase:
                             day_counter += 1
                             cur.execute('UPDATE  Event SET Day_Counter = %d WHERE rowid = 1' % day_counter)
                         else:
-                            cur.execute('UPDATE  Event SET Plotly = 1 WHERE rowid = 1')
+                            cur.execute('UPDATE  Event SET Plotly_Cw_Ovr = 1 WHERE rowid = 1')
                             cur.execute('SELECT * FROM CurrentWeek WHERE rowid = 1')
                             previous_data = cur.fetchone()['Day']
                             cur.execute('DELETE FROM CurrentWeek WHERE Day = %d' % previous_data)
@@ -450,6 +450,8 @@ class SqlBase:
                 for x in range(1, count+1):
                     cur.execute('UPDATE  Year SET UPLOADED = %d WHERE rowid = %d' % (0, x))
 
+                cur.execute('UPDATE  Event SET Plotly_Cw_Ovr = 1 WHERE rowid = 1')
+
         except sqlite3.Error, e:
             log_error("Error database access in resetflagupload()")
             log_error(str(e))
@@ -457,27 +459,3 @@ class SqlBase:
             exit()
 
 
-    @staticmethod
-    def minvalue(dbname):
-
-        try:
-            conn = sqlite3.connect(dbname)
-
-            with conn:
-                # connect database in dictionary mode
-                conn.row_factory = sqlite3.Row
-                cur = conn.cursor()
-
-                # Search the first rowid with uploaded = 0
-                cur.execute('SELECT min(Temp_In) FROM CurrentWeek where Day = 26')
-                valeur = cur.fetchone()[0]
-                print valeur
-                cur.execute('SELECT max(Temp_In) FROM CurrentWeek where Day = 26')
-                valeur = cur.fetchone()[0]
-                print valeur
-                cur.execute('SELECT avg(Temp_In) FROM CurrentWeek where Day = 26')
-                valeur = cur.fetchone()[0]
-                print valeur
-        except sqlite3.Error, e:
-            print e
-            exit()

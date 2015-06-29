@@ -1,7 +1,7 @@
 /********************************************************************************
 DEFINITIONS
 ********************************************************************************/
-#define DEBUG                                     // sortie console pour debug
+#undef DEBUG                                     // sortie console pour debug
 /*******************************************************************************/
 #define BUSYPIN 4                                 // n° de la pin Busy
 #define RTSPIN 6                                  // n° de la pin RTS (output)

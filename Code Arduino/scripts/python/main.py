@@ -4,6 +4,7 @@
 
 import random
 import os.path
+import urllib2
 import sys
 from cloudscope import oauth2_build
 from sqlcode import SqlBase
@@ -38,16 +39,16 @@ def worksheet():
 
 def datalist_test():
     """
-    For test only this method return a list  like [1256234,1546879,"HP","2012-07-09T22:45:22"]
+    For test only this method return a list  like [1256234,1546879,"HP","26.1","2012-07-09T22:45:22"]
     the global variable a defined at the beginning of the file
     in : void
-    Out list  [Int, Int, String, String]  [1451271, 1324002, 'HP', '2001-12-11T06:21:40']
+    Out list  [Int, Int, String, Float, String]  [1451271, 1324002, 'HP', '26.1' , '2001-12-11T06:21:40']
     """
 
     global index_hc
     global index_hp
     global epochdate
-    epochdate += 900
+    epochdate += 2001
 
     datetime_iso8601 = TimeFunc.epoch_to_iso8601(epochdate)
     heures = int(TimeFunc.epoch_to_hour(epochdate))
@@ -69,9 +70,15 @@ def datalist_test():
     if mode == "HC":
         index_hc += abs(random.randint(1, 100))  # increment HC during HC time
 
-    liste1 = [index_hp, index_hc, mode, datetime_iso8601]
+    temperature = abs(random.randint(20, 25))
+    tfl = abs(random.randint(1, 9))/10.0
+    temperature += tfl
+
+    liste1 = [index_hp, index_hc, mode, temperature, datetime_iso8601]
 
     return liste1
+
+
 '''
 ************************************************************************
 ************************************************************************
@@ -79,7 +86,8 @@ def datalist_test():
 '''
 if __name__ == '__main__':
 
-    test = 0
+    test = 1
+    plot = 1
 
     if test == 1:
         print "Test Mode"
@@ -87,17 +95,18 @@ if __name__ == '__main__':
         if os.path.isfile(dbname):
             os.remove(dbname)
             print "database erased"
-        for x in range(0, 9):
+        for x in range(0, 88):
             SqlBase.update(dbname, test, datalist_test())
         print "database updated"
-        PlotlyPlot.plot(dbname, test)
-        print "Plotly updated"
+        if plot:
+            SqlBase.resetflagupload(dbname)
+            PlotlyPlot.plot(dbname, test)
+            print "Plotly updated"
     else:
-
         #dbname = '/root/python/yun_database.db'
-        dbname = 'tutudatabase.db'
+        dbname = 'database.db'
         #print sys.argv[1:]
         SqlBase.update(dbname, test, sys.argv[1:])
-        #PlotlyPlot.plot(dbname, test)
-        #SqlBase.minvalue(dbname)
+        if plot:
+            PlotlyPlot.plot(dbname, test)
 
