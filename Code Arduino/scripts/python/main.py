@@ -86,16 +86,16 @@ def datalist_test():
 '''
 if __name__ == '__main__':
 
-    test = 1
+    test = 0
     plot = 1
 
     if test == 1:
         print "Test Mode"
-        dbname = 'database.db'
+        dbname = 'testdatabase.db'
         if os.path.isfile(dbname):
             os.remove(dbname)
             print "database erased"
-        for x in range(0, 88):
+        for x in range(0, 156):
             SqlBase.update(dbname, test, datalist_test())
         print "database updated"
         if plot:
@@ -103,9 +103,7 @@ if __name__ == '__main__':
             PlotlyPlot.plot(dbname, test)
             print "Plotly updated"
     else:
-        #dbname = '/root/python/yun_database.db'
-        dbname = 'database.db'
-        #print sys.argv[1:]
+        dbname = '/root/python/yun_database.db'
         SqlBase.update(dbname, test, sys.argv[1:])
         if plot:
             PlotlyPlot.plot(dbname, test)

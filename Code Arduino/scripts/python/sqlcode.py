@@ -29,19 +29,19 @@ class SqlBase:
                     cur = conn.cursor()
 
                     # create a table for the detailed Days
-                    cur.execute('CREATE TABLE CurrentWeek( Year INTEGER, Month INTEGER, Day INTEGER,\
-                                Week_Number INTEGER, WeekDay_Number INTEGER,\
+                    cur.execute('CREATE TABLE Hour( Year INTEGER, Month INTEGER, Day INTEGER,\
+                                Week INTEGER, WeekDay_Number INTEGER,\
                                 Day_Name TEXT, Date TEXT, Hour TEXT, \
                                 Mode TEXT, Index_HP INTEGER, Index_HC INTEGER, \
                                 Diff_HP INTEGER, Diff_HC INTEGER, Diff_HPHC INTEGER, \
                                 Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER, Temp_In REAL, Temp_Out REAL, UPLOADED INTEGER);')
                     # create a table for the Days
-                    cur.execute('CREATE TABLE Day(Year INTEGER, Month INTEGER, Day INTEGER, Day_Name TEXT, Week_Number INTEGER, \
+                    cur.execute('CREATE TABLE Day(Year INTEGER, Month INTEGER, Day INTEGER, Day_Name TEXT, Week INTEGER, \
                                 Index_HP INTEGER, Index_HC INTEGER,Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER,\
                                 Temp_In_Min REAL, Temp_In_Avg REAL, Temp_In_Max REAL, \
                                 Temp_Out_Min REAL, Temp_Out_Avg REAL, Temp_Out_Max REAL, UPLOADED INTEGER);')
                     # create a table for the week
-                    cur.execute('CREATE TABLE Week(Year INTEGER, Week_Number INTEGER, \
+                    cur.execute('CREATE TABLE Week(Year INTEGER, Week INTEGER, \
                                 Index_HP INTEGER, Index_HC INTEGER,\
                                 Cumul_HP INTEGER, Cumul_HC INTEGER, Cumul_HPHC INTEGER, \
                                 Temp_In_Min REAL, Temp_In_Avg REAL, Temp_In_Max REAL, \
@@ -121,19 +121,19 @@ class SqlBase:
                 cur = conn.cursor()
 
                 # count number of row already inserted in table currentweek **************************************
-                cur.execute('SELECT Count() FROM CurrentWeek')
+                cur.execute('SELECT Count() FROM Hour')
                 count = cur.fetchone()[0]
 
                 if count == 0:  # init case
 
-                    sqlquery = 'INSERT INTO CurrentWeek (Year, Month, Day, Week_Number, WeekDay_Number, Day_Name, Date,Hour,\
+                    sqlquery = 'INSERT INTO Hour (Year, Month, Day, Week, WeekDay_Number, Day_Name, Date,Hour,\
                                 Mode, Index_HP, Index_HC, Diff_HP, Diff_HC, Diff_HPHC , \
                                 Cumul_HP, Cumul_HC, Cumul_HPHC, Temp_In, Temp_Out, UPLOADED)\
                                 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
                     cur.execute(sqlquery, (nyear, nmonth, nday, nweekn, nwdaynu, ndayna, ndate,
                                            nhour, nmode, nhp, nhc, 0, 0, 0, 0, 0, 0, tin, tout, 0))
 
-                    sqlquery = 'INSERT INTO Week (Year, Week_Number,\
+                    sqlquery = 'INSERT INTO Week (Year, Week,\
                                 Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC, Temp_In_Min, Temp_In_Avg, Temp_In_Max,\
                                 Temp_Out_Min, Temp_Out_Avg, Temp_Out_Max, UPLOADED) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
                     cur.execute(sqlquery, (nyear, nweekn, nhp, nhc, 0, 0, 0, tin, tin, tin, tout, tout, tout, 0))
@@ -149,7 +149,7 @@ class SqlBase:
                                 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)'
                     cur.execute(sqlquery, (nyear, nhp, nhc, 0, 0, 0, tin, tin, tin, tout, tout, tout, 0))
 
-                    sqlquery = 'INSERT INTO Day (Year, Month, Day, Day_Name, Week_Number, \
+                    sqlquery = 'INSERT INTO Day (Year, Month, Day, Day_Name, Week, \
                                 Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC, Temp_In_Min, Temp_In_Avg, Temp_In_Max,\
                                 Temp_Out_Min, Temp_Out_Avg, Temp_Out_Max, UPLOADED) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
                     cur.execute(sqlquery, (nyear, nmonth, nday, ndayna, nweekn, nhp, nhc, 0, 0, 0, tin, tin, tin, tout, tout, tout, 0))
@@ -159,13 +159,13 @@ class SqlBase:
 
                 else:
 
-                    # ############################### CurrentWeek Table PROCESSING    ###########################################
+                    # ############################### Hour Table PROCESSING    ###########################################
 
-                    sqlquery = 'INSERT INTO CurrentWeek (Year,Month,Day,Week_Number,WeekDay_Number,Day_Name,Date,Hour,\
+                    sqlquery = 'INSERT INTO Hour (Year,Month,Day,Week,WeekDay_Number,Day_Name,Date,Hour,\
                             Mode, Index_HP, Index_HC, Diff_HP, Diff_HC, Diff_HPHC, Cumul_HP, Cumul_HC, Cumul_HPHC,\
                             Temp_In, Temp_Out, UPLOADED) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
 
-                    cur.execute('SELECT * FROM CurrentWeek WHERE rowid = %d' % count)
+                    cur.execute('SELECT * FROM Hour WHERE rowid = %d' % count)
                     previous_data = cur.fetchone()
 
                     if previous_data['WeekDay_Number'] == nwdaynu:
@@ -201,9 +201,9 @@ class SqlBase:
                             cur.execute('UPDATE  Event SET Day_Counter = %d WHERE rowid = 1' % day_counter)
                         else:
                             cur.execute('UPDATE  Event SET Plotly_Cw_Ovr = 1 WHERE rowid = 1')
-                            cur.execute('SELECT * FROM CurrentWeek WHERE rowid = 1')
+                            cur.execute('SELECT * FROM Hour WHERE rowid = 1')
                             previous_data = cur.fetchone()['Day']
-                            cur.execute('DELETE FROM CurrentWeek WHERE Day = %d' % previous_data)
+                            cur.execute('DELETE FROM Hour WHERE Day = %d' % previous_data)
                             # print "Day %d removed" % previous_data
                             cur.execute('VACUUM')  # #### VERY IMPORTANT ##### #
 
@@ -223,27 +223,27 @@ class SqlBase:
                         cur.execute('UPDATE  Day SET CUMUL_HPHC = %d WHERE rowid = %d' % (nchphc, count))
                         cur.execute('UPDATE  Day SET UPLOADED = %d WHERE rowid = %d' % (0, count))
                         # Calculate Min AVG Max of temperature In---------------------------------------
-                        cur.execute('SELECT MIN(Temp_In) FROM CurrentWeek where Day = %d' % nday)
+                        cur.execute('SELECT MIN(Temp_In) FROM Hour where Day = %d' % nday)
                         ntemp = cur.fetchone()[0]
                         cur.execute('UPDATE Day SET Temp_In_Min = %f WHERE rowid = %d' % (ntemp, count))
 
-                        cur.execute('SELECT AVG(Temp_In) FROM CurrentWeek where Day = %d' % nday)
+                        cur.execute('SELECT AVG(Temp_In) FROM Hour where Day = %d' % nday)
                         ntemp = cur.fetchone()[0]
                         cur.execute('UPDATE Day SET Temp_In_Avg = %.1f WHERE rowid = %d' % (ntemp, count))
 
-                        cur.execute('SELECT MAX(Temp_In) FROM CurrentWeek where Day = %d' % nday)
+                        cur.execute('SELECT MAX(Temp_In) FROM Hour where Day = %d' % nday)
                         ntemp = cur.fetchone()[0]
                         cur.execute('UPDATE Day SET Temp_In_Max = %f WHERE rowid = %d' % (ntemp, count))
                         # Calculate Min AVG Max of temperature Out--------------------------------------
-                        cur.execute('SELECT MIN(Temp_Out) FROM CurrentWeek where Day = %d' % nday)
+                        cur.execute('SELECT MIN(Temp_Out) FROM Hour where Day = %d' % nday)
                         ntemp = cur.fetchone()[0]
                         cur.execute('UPDATE Day SET Temp_Out_Min = %f WHERE rowid = %d' % (ntemp, count))
 
-                        cur.execute('SELECT AVG(Temp_Out) FROM CurrentWeek where Day = %d' % nday)
+                        cur.execute('SELECT AVG(Temp_Out) FROM Hour where Day = %d' % nday)
                         ntemp = cur.fetchone()[0]
                         cur.execute('UPDATE Day SET Temp_Out_Avg = %.1f WHERE rowid = %d' % (ntemp, count))
 
-                        cur.execute('SELECT MAX(Temp_Out) FROM CurrentWeek where Day = %d' % nday)
+                        cur.execute('SELECT MAX(Temp_Out) FROM Hour where Day = %d' % nday)
                         ntemp = cur.fetchone()[0]
                         cur.execute('UPDATE Day SET Temp_Out_Max = %f WHERE rowid = %d' % (ntemp, count))
 
@@ -251,7 +251,7 @@ class SqlBase:
                         # new Day
                         nchp = previous_data['Index_HP'] + previous_data['Cumul_HP']
                         nchc = previous_data['Index_HC'] + previous_data['Cumul_HC']
-                        sqlquery = 'INSERT INTO Day (Year, Month, Day, Day_Name, Week_Number,\
+                        sqlquery = 'INSERT INTO Day (Year, Month, Day, Day_Name, Week,\
                                     Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC, Temp_In_Min, Temp_In_Avg,\
                                     Temp_In_Max, Temp_Out_Min, Temp_Out_Avg, Temp_Out_Max, UPLOADED)\
                                     VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
@@ -263,7 +263,7 @@ class SqlBase:
                     cur.execute('SELECT * FROM Week WHERE rowid = %d' % count)
                     previous_data = cur.fetchone()
 
-                    if previous_data['Week_Number'] == nweekn:
+                    if previous_data['Week'] == nweekn:
                         # same week
                         nchp = nhp - previous_data['Index_HP']
                         nchc = nhc - previous_data['Index_HC']
@@ -274,28 +274,28 @@ class SqlBase:
                         cur.execute('UPDATE  Week SET UPLOADED = %d WHERE rowid = %d' % (0, count))
 
                         # Calculate Min AVG Max of temperature In---------------------------------------
-                        cur.execute('SELECT MIN(Temp_In_Min) FROM Day where Week_Number = %d And Year = %d' % (nweekn, nyear))
+                        cur.execute('SELECT MIN(Temp_In_Min) FROM Day where Week = %d And Year = %d' % (nweekn, nyear))
                         ntemp = cur.fetchone()[0]
                         cur.execute('UPDATE Week SET Temp_In_Min = %f WHERE rowid = %d' % (ntemp, count))
 
-                        cur.execute('SELECT AVG(Temp_In_Avg) FROM Day where Week_Number = %d And Year = %d' % (nweekn, nyear))
+                        cur.execute('SELECT AVG(Temp_In_Avg) FROM Day where Week = %d And Year = %d' % (nweekn, nyear))
                         ntemp = cur.fetchone()[0]
                         cur.execute('UPDATE Week SET Temp_In_Avg = %.1f WHERE rowid = %d' % (ntemp, count))
 
-                        cur.execute('SELECT MAX(Temp_In_Max) FROM Day where Week_Number = %d And Year = %d' % (nweekn, nyear))
+                        cur.execute('SELECT MAX(Temp_In_Max) FROM Day where Week = %d And Year = %d' % (nweekn, nyear))
                         ntemp = cur.fetchone()[0]
                         cur.execute('UPDATE Week SET Temp_In_Max = %f WHERE rowid = %d' % (ntemp, count))
 
                         # Calculate Min AVG Max of temperature Out--------------------------------------
-                        cur.execute('SELECT MIN(Temp_Out_Min) FROM Day where Week_Number = %d And Year = %d' % (nweekn, nyear))
+                        cur.execute('SELECT MIN(Temp_Out_Min) FROM Day where Week = %d And Year = %d' % (nweekn, nyear))
                         ntemp = cur.fetchone()[0]
                         cur.execute('UPDATE Week SET Temp_Out_Min = %f WHERE rowid = %d' % (ntemp, count))
 
-                        cur.execute('SELECT AVG(Temp_Out_Avg) FROM Day where Week_Number = %d And Year = %d' % (nweekn, nyear))
+                        cur.execute('SELECT AVG(Temp_Out_Avg) FROM Day where Week = %d And Year = %d' % (nweekn, nyear))
                         ntemp = cur.fetchone()[0]
                         cur.execute('UPDATE Week SET Temp_Out_Avg = %.1f WHERE rowid = %d' % (ntemp, count))
 
-                        cur.execute('SELECT MAX(Temp_Out_Max) FROM Day where Week_Number = %d And Year = %d' % (nweekn, nyear))
+                        cur.execute('SELECT MAX(Temp_Out_Max) FROM Day where Week = %d And Year = %d' % (nweekn, nyear))
                         ntemp = cur.fetchone()[0]
                         cur.execute('UPDATE Week SET Temp_Out_Max = %f WHERE rowid = %d' % (ntemp, count))
 
@@ -303,7 +303,7 @@ class SqlBase:
                         # new week
                         nchp = previous_data['Index_HP'] + previous_data['Cumul_HP']
                         nchc = previous_data['Index_HC'] + previous_data['Cumul_HC']
-                        sqlquery = 'INSERT INTO Week (Year, Week_Number, Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC,\
+                        sqlquery = 'INSERT INTO Week (Year, Week, Index_HP, Index_HC, Cumul_HP, Cumul_HC, Cumul_HPHC,\
                                     Temp_In_Min, Temp_In_Avg, Temp_In_Max, Temp_Out_Min, Temp_Out_Avg, Temp_Out_Max, UPLOADED)\
                                     VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
                         cur.execute(sqlquery, (nyear, nweekn, nchp, nchc, 0, 0, 0, tin, tin, tin, tout, tout, tout, 0))
@@ -425,10 +425,10 @@ class SqlBase:
                 cur = conn.cursor()
 
                 # Search the first rowid with uploaded = 0   ****************
-                cur.execute('SELECT Count() FROM CurrentWeek')
+                cur.execute('SELECT Count() FROM Hour')
                 count = cur.fetchone()[0]
                 for x in range(1, count+1):
-                    cur.execute('UPDATE  CurrentWeek SET UPLOADED = %d WHERE rowid = %d' % (0, x))
+                    cur.execute('UPDATE  Hour SET UPLOADED = %d WHERE rowid = %d' % (0, x))
 
                 cur.execute('SELECT Count() FROM Day')
                 count = cur.fetchone()[0]
@@ -453,9 +453,107 @@ class SqlBase:
                 cur.execute('UPDATE  Event SET Plotly_Cw_Ovr = 1 WHERE rowid = 1')
 
         except sqlite3.Error, e:
-            log_error("Error database access in resetflagupload()")
+            log_error("Error database access in Sqlbaqse.resetflagupload()")
             log_error(str(e))
             print str(e)
             exit()
 
+    @staticmethod
+    def count_to_upload(dbname, table):
+        """
+        Count the number of data to be uploaded to plotly.
+        :param dbname:
+        :param table:
+        :return: rowid count_start, count_end
+        """
+        try:
+            conn = sqlite3.connect(dbname)
 
+            with conn:
+                # connect database in dictionary mode
+                conn.row_factory = sqlite3.Row
+                cur = conn.cursor()
+                cur.execute('SELECT Count() FROM %s' % table)
+                count = cur.fetchone()[0]
+                count_end = count
+                upl = 0
+                while upl == 0 and count > 0:
+                    cur.execute('SELECT * FROM %s WHERE rowid = %d' % (table, count))
+                    upl = int(cur.fetchone()['UPLOADED'])
+                    count -= 1
+                if upl == 0:
+                    count_start = 1
+                else:
+                    if count+2 > count_end:
+                        count_start = 0
+                    else:
+                        count_start = count + 2
+                # return a dictionnary
+                return {'count_start': count_start, "count_end": count_end}
+
+        except sqlite3.Error:
+            log_error("Error database access in Sqlbase.count_to_upload()")
+            exit()
+
+    @staticmethod
+    def set_flag_upload(dbname, table):
+        """
+        Set flag UPLOADED in the table.
+        :param dbname:
+        :param table:
+        :return:
+        """
+        count_dict = SqlBase.count_to_upload(dbname, table)
+        count_start = count_dict['count_start']
+        count_end = count_dict['count_end']
+
+        try:
+            conn = sqlite3.connect(dbname)
+            with conn:
+                conn.row_factory = sqlite3.Row
+                cur = conn.cursor()
+                for count in range(count_start, count_end+1):
+                    cur.execute('UPDATE  %s SET UPLOADED = 1 WHERE rowid = %d' % (table, count))
+        except sqlite3.Error:
+            log_error("Error database access in Sqlbase.set_flag_upload()")
+            exit()
+
+    @staticmethod
+    def get_plotly_cw_ovr(dbname):
+        """
+        Return the flag Plotly_Cw_Ovr to say to plotly if
+        graph must be overwrite(1) or updated(0)
+        :param dbname:
+        :param table:
+        :return: plotly_overwrite
+        """
+
+        try:
+            conn = sqlite3.connect(dbname)
+            with conn:
+                conn.row_factory = sqlite3.Row
+                cur = conn.cursor()
+                cur.execute('SELECT * FROM Event WHERE rowid = 1')
+                plotly_overwrite = cur.fetchone()['Plotly_Cw_Ovr']
+                return plotly_overwrite
+        except sqlite3.Error:
+            log_error("Error database access in Sqlbase.get_plotly_cw_ovr()")
+            exit()
+
+    @staticmethod
+    def clear_plotly_cw_ovr(dbname):
+        """
+        clear the flag Plotly_Cw_Ovr
+        :param dbname:
+        :param table:
+        :return: plotly_overwrite
+        """
+        try:
+            conn = sqlite3.connect(dbname)
+            with conn:
+                conn.row_factory = sqlite3.Row
+                cur = conn.cursor()
+                cur.execute('UPDATE Event SET Plotly_Cw_Ovr = 0 WHERE rowid = 1')
+        except sqlite3.Error:
+            log_error("Error database access in Sqlbase.clear_plotly_cw_ovr()")
+            exit()
