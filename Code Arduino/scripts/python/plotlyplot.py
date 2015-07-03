@@ -35,46 +35,65 @@ class PlotlyPlot:
             tempfolder = 'Yun_Temperature/'
 
         try:
-            # for unlock websense (quiet and delete after download)
+            # check if plotly website is online
             if not test:
                 os.system("wget -q --delete-after www.plot.ly")         # quiet and delete after download.
                 _ = urllib2.urlopen('https://plot.ly/', timeout=4)
 
-            #disable warning in plotly call with SSL
-            requests.packages.urllib3.disable_warnings()
+            requests.packages.urllib3.disable_warnings()                # disable warning in plotly call with SSL
 
-            PlotlyPlot.teleinfo_hour(dbname, 'Hour', telefolder)
-            retval = PlotlyPlot.temperature_hour(dbname, 'Hour', tempfolder)
-            if retval:
-                SqlBase.clear_plotly_cw_ovr(dbname)
+            tables = ['Hour', 'Day', 'Week', 'Month', 'Year']
 
-            PlotlyPlot.teleinfo(dbname, 'Day', telefolder)
-            PlotlyPlot.temperature(dbname, 'Day', tempfolder)
-            SqlBase.set_flag_upload(dbname, 'Day')
-
-            PlotlyPlot.teleinfo(dbname, 'Week', telefolder)
-            PlotlyPlot.temperature(dbname, 'Week', tempfolder)
-            SqlBase.set_flag_upload(dbname, 'Week')
-
-            PlotlyPlot.teleinfo(dbname, 'Month', telefolder)
-            PlotlyPlot.temperature(dbname, 'Month', tempfolder)
-            SqlBase.set_flag_upload(dbname, 'Month')
-
-            PlotlyPlot.teleinfo(dbname, 'Year', telefolder)
-            PlotlyPlot.temperature(dbname, 'Year', tempfolder)
-            SqlBase.set_flag_upload(dbname, 'Year')
+            for table in tables:
+                PlotlyPlot.teleinfo(dbname, table, telefolder)
+                retval = PlotlyPlot.temperature(dbname, table, tempfolder)
+                if retval:
+                    SqlBase.clear_plotly_hour_ovr(dbname)
+                SqlBase.set_flag_upload(dbname, table)
 
         except urllib2.URLError:
             pass
 
     @staticmethod
-    def teleinfo_hour(dbname, table, folder_name):
+    def stackedbar():
+        """
+        this example don't work in plotly
+        :return:
+        """
+
+        trace1 = Bar(
+            x=['giraffes'],
+            y=[0],
+            name='SF Zoo'
+        )
+        print trace1
+        trace2 = Bar(
+            x=['giraffes'],
+            y=[0],
+            name='LA Zoo'
+        )
+        print trace2
+        data = Data([trace1, trace2])
+        print data
+        layout = Layout(barmode='stack')
+        fig = Figure(data=data, layout=layout)
+        tls.get_credentials_file()
+        plot_url = py.plot(fig, filename='stacked-bar', auto_open=False)
+
+
+    @staticmethod
+    def teleinfo(dbname, table, folder_name):
         """
         Send to plotly the currentweek tabel from the database
         update flag into the database if data uploaded
         :param dbname
         :return:   none
         """
+
+        number_of_record = SqlBase.get_number_of_record(dbname)  # ignore first teleinfo record because plotly crash with double zero!
+        if number_of_record < 2:
+            return
+
         count_dict = SqlBase.count_to_upload(dbname, table)
         count_start = count_dict['count_start']
         count_end = count_dict['count_end']
@@ -93,38 +112,47 @@ class PlotlyPlot:
                         cur.execute('SELECT * FROM %s WHERE rowid = %d' % (table, count))
                         data = cur.fetchone()
                         x1range.append(str(data[table]))
-                        hp_range.append(data['Diff_HP'])
-                        hc_range.append(data['Diff_HC'])
+                        if table == 'Hour':
+                            hp_range.append(data['Diff_HP'])
+                            hc_range.append(data['Diff_HC'])
+                        else:
+                            hp_range.append(data['Cumul_HP'])
+                            hc_range.append(data['Cumul_HC'])
             except sqlite3.Error:
-                log_error("Error database access in teleinfo_today_diff")
+                log_error("Error database access in PlotlyPlot.teleinfo()")
                 exit()
             # upload data list to plotly
-            trace1 = Bar(x=x1range, y=hp_range, name='HP')
-            trace2 = Bar(x=x1range, y=hc_range, name='HC')
+            trace1 = Bar(y=hp_range, x=x1range, name='HP')
+            trace2 = Bar(y=hc_range, x=x1range, name='HC')
             data = Data([trace1, trace2])
-            layout = Layout(title=table, barmode='stack', yaxis=YAxis(title='Watt'), xaxis=XAxis(title='Hour'))
+            layout = Layout(title=table, barmode='stack', yaxis=YAxis(title='Watt'), xaxis=XAxis(title=table))
             fig = Figure(data=data, layout=layout)
-            plotly_overwrite = SqlBase.get_plotly_cw_ovr(dbname)
+            if table == 'Hour':
+                plotly_overwrite = SqlBase.get_plotly_cw_ovr(dbname)
+            else:
+                plotly_overwrite = 1
             try:
                 tls.get_credentials_file()
                 if plotly_overwrite == 1:
                     py.plot(fig, filename=folder_name + table, fileopt='overwrite', auto_open=False)
-                    return plotly_overwrite
                 else:
                     py.plot(fig, filename=folder_name + table, fileopt='extend', auto_open=False)
-                    return plotly_overwrite
+                return plotly_overwrite
             except exceptions, e:
                 log_error(str(e))
                 exit()
+        else:
+            pass
+
 
     @staticmethod
-    def temperature_hour(dbname, table, folder_name):
+    def temperature(dbname, table, folder_name):
         """
         Send to plotly the temperature
         :param dbname:
         :param table:
         :param folder_name:
-        :return:
+        :return: plotly_overwrite
         """
         count_dict = SqlBase.count_to_upload(dbname, table)
         count_start = count_dict['count_start']
@@ -133,6 +161,9 @@ class PlotlyPlot:
         # construct the differents list for stacked bar graph
         if count_start:
             tin_range = []
+            tin_min_range = []
+            tin_avg_range = []
+            tin_max_range = []
             x1range = []
             try:
                 conn = sqlite3.connect(dbname)
@@ -143,148 +174,37 @@ class PlotlyPlot:
                         cur.execute('SELECT * FROM %s WHERE rowid = %d' % (table, count))
                         data = cur.fetchone()
                         x1range.append(str(data[table]))
-                        tin_range.append(data['Temp_In'])
+                        if table == 'Hour':
+                            tin_range.append(data['Temp_In'])
+                        else:
+                            tin_min_range.append(data['Temp_In_Min'])
+                            tin_avg_range.append(data['Temp_In_Avg'])
+                            tin_max_range.append(data['Temp_In_Max'])
             except sqlite3.Error:
-                log_error("Error database access in temperature_hour_diff()")
+                log_error("Error database access in PlotlyPlot.temperature()")
                 exit()
             # upload data list to plotly
-            trace = Scatter(x=x1range, y=tin_range, name='Temperature In', mode='lines+markers')
-            data = Data([trace])
-            layout = Layout(title=table, yaxis=YAxis(title='°C'), xaxis=XAxis(title='Hour'))
+            if table == 'Hour':
+                plotly_overwrite = SqlBase.get_plotly_cw_ovr(dbname)
+                trace = Scatter(x=x1range, y=tin_range, name='Temperature In', mode='lines+markers')
+                data = Data([trace])
+            else:
+                plotly_overwrite = 1
+                trace1 = Scatter(x=x1range, y=tin_min_range, name='Temperature In Min', mode='lines+markers')
+                trace2 = Scatter(x=x1range, y=tin_avg_range, name='Temperature In Avg', mode='lines+markers')
+                trace3 = Scatter(x=x1range, y=tin_max_range, name='Temperature In Max', mode='lines+markers')
+                data = Data([trace1, trace2, trace3])
+            layout = Layout(title=table, yaxis=YAxis(title='°C'), xaxis=XAxis(title=table))
             fig = Figure(data=data, layout=layout)
-            plotly_overwrite = SqlBase.get_plotly_cw_ovr(dbname)
             try:
                 tls.get_credentials_file()
                 if plotly_overwrite == 1:
                     py.plot(fig, filename=folder_name + table, fileopt='overwrite', auto_open=False)
-                    return plotly_overwrite
                 else:
                     py.plot(fig, filename=folder_name + table, fileopt='extend', auto_open=False)
-                    return plotly_overwrite
+                return plotly_overwrite
             except exceptions, e:
                 log_error(str(e))
                 exit()
-
-            # code for Cumul_HPHC
-            #This method send to plotly the real time cumul of the current day
-            #don't use this method as it is .
-            #use it for test case.
-
-            '''
-            cur.execute('SELECT * FROM %s WHERE rowid = %d' % (table, count))
-            data = cur.fetchone()
-            x1range = str(data['Hour'])
-            hp_range = data['Cumul_HP']
-            hc_range = data['Cumul_HC']
-            trace1 = Bar(x=x1range, y=hp_range, name='HP')
-            trace2 = Bar(x=x1range, y=hc_range, name='HC')
-            data_teleinfo = Data([trace1, trace2])
-            layout_teleinfo = Layout(title='Today Cumul', barmode='stack', yaxis=YAxis(title='Watt'),
-                                     xaxis=XAxis(title='Hour'))
-            fig_teleinfo = Figure(data=data_teleinfo, layout=layout_teleinfo)
-            requests.packages.urllib3.disable_warnings()
-            try:
-                tls.get_credentials_file()
-                py.plot(fig_teleinfo, filename=teleinfo_folder + 'Today_Cumul', fileopt='overwrite', auto_open=False)
-            except exceptions, e:
-                log_error(str(e))
-                exit()
-                '''
-
-
-    @staticmethod
-    def teleinfo(dbname, table, folder_name):
-        """
-        Send to plotly the data
-        :param dbname:
-        :param table:
-        :param folder_name:
-        :return: count_dict (dictionnary of count_start and count_end
-        """
-        count_dict = SqlBase.count_to_upload(dbname, table)
-        count_start = count_dict['count_start']
-        count_end = count_dict['count_end']
-
-        # construct the differents list for stacked bar graph
-        if count_start:
-            hp_range = []
-            hc_range = []
-            x1range = []
-            # code for Cumul_HP Cumul_HC
-            try:
-                conn = sqlite3.connect(dbname)
-                with conn:
-                    conn.row_factory = sqlite3.Row
-                    cur = conn.cursor()
-                    for count in range(count_start, count_end+1):
-                        cur.execute('SELECT * FROM %s WHERE rowid = %d' % (table, count))
-                        data = cur.fetchone()
-                        x1range.append(str(data[table]))
-                        hp_range.append(data['Cumul_HP'])
-                        hc_range.append(data['Cumul_HC'])
-            except sqlite3.Error:
-                log_error("Error database access in plotly %s" % table)
-                exit()
-            # upload data list to plotly
-            trace1 = Bar(x=x1range, y=hp_range, name='HP')
-            trace2 = Bar(x=x1range, y=hc_range, name='HC')
-            data = Data([trace1, trace2])
-            layout = Layout(title=table, barmode='stack', yaxis=YAxis(title='Watt'), xaxis=XAxis(title=table))
-            fig = Figure(data=data, layout=layout)
-            requests.packages.urllib3.disable_warnings()
-            try:
-                tls.get_credentials_file()
-                py.plot(fig, filename=folder_name + table, fileopt='overwrite', auto_open=False)
-            except exceptions, e:
-                log_error(str(e))
-                exit()
-
-    @staticmethod
-    def temperature(dbname, table, folder_name):
-        """
-        Send to plotly the data
-        :param dbname:
-        :param table:
-        :param folder_name:
-        :return: count_dict (dictionnary of count_start and count_end
-        """
-        count_dict = SqlBase.count_to_upload(dbname, table)
-        count_start = count_dict['count_start']
-        count_end = count_dict['count_end']
-
-        # construct the differents list for stacked bar graph
-        if count_start:
-            x1range = []
-            tin_min_range = []
-            tin_avg_range = []
-            tin_max_range = []
-            # code for Cumul_HP Cumul_HC
-            try:
-                conn = sqlite3.connect(dbname)
-                with conn:
-                    conn.row_factory = sqlite3.Row
-                    cur = conn.cursor()
-                    for count in range(count_start, count_end+1):
-                        cur.execute('SELECT * FROM %s WHERE rowid = %d' % (table, count))
-                        data = cur.fetchone()
-                        x1range.append(str(data[table]))
-                        tin_min_range.append(data['Temp_In_Min'])
-                        tin_avg_range.append(data['Temp_In_Avg'])
-                        tin_max_range.append(data['Temp_In_Max'])
-            except sqlite3.Error:
-                log_error("Error database access in plotly %s" % table)
-                exit()
-            # upload data list to plotly
-            trace1 = Scatter(x=x1range, y=tin_min_range, name='Temperature In Min', mode='lines+markers')
-            trace2 = Scatter(x=x1range, y=tin_avg_range, name='Temperature In Avg', mode='lines+markers')
-            trace3 = Scatter(x=x1range, y=tin_max_range, name='Temperature In Max', mode='lines+markers')
-            data = Data([trace1, trace2, trace3])
-            layout = Layout(title=table, barmode='stack', yaxis=YAxis(title='Temperature °C'), xaxis=XAxis(title=table))
-            fig = Figure(data=data, layout=layout)
-            requests.packages.urllib3.disable_warnings()
-            try:
-                tls.get_credentials_file()
-                py.plot(fig, filename=folder_name + table, fileopt='extend', auto_open=False)
-            except exceptions, e:
-                log_error(str(e))
-                exit()
+        else:
+            pass
