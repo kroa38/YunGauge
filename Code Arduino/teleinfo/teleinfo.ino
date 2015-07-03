@@ -622,12 +622,12 @@ String temperature(void)
   if ( !ds.search(addr)) {
       Serial.print("No more addresses.\n");
       ds.reset_search();
-      return "99";
+      return "99.9";
   }
   
    if ( OneWire::crc8( addr, 7) != addr[7]) {
       Serial.print("CRC is not valid!\n");
-      return "99";
+      return "99.9";
   }
 
   ds.reset();

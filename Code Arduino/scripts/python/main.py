@@ -95,7 +95,7 @@ if __name__ == '__main__':
         if os.path.isfile(dbname):
             os.remove(dbname)
             print "database erased"
-        for x in range(0, 156):
+        for x in range(0, 1):
             SqlBase.update(dbname, test, datalist_test())
         print "database updated"
         if plot:

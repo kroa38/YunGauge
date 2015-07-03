@@ -26,6 +26,7 @@ class PlotlyPlot:
         :param dbname
         :return:   none
         """
+
         if test:
             telefolder = 'Test_Teleinfo/'
             tempfolder = 'Test_Temperature/'
@@ -36,8 +37,11 @@ class PlotlyPlot:
         try:
             # for unlock websense (quiet and delete after download)
             if not test:
-                os.system("wget -q --delete-after www.plot.ly")         # pour debloquer websense (quiet and delete after download.
+                os.system("wget -q --delete-after www.plot.ly")         # quiet and delete after download.
                 _ = urllib2.urlopen('https://plot.ly/', timeout=4)
+
+            #disable warning in plotly call with SSL
+            requests.packages.urllib3.disable_warnings()
 
             PlotlyPlot.teleinfo_hour(dbname, 'Hour', telefolder)
             retval = PlotlyPlot.temperature_hour(dbname, 'Hour', tempfolder)
