@@ -20,7 +20,6 @@ index_hp = 5451113
 index_hc = 5323021
 epochdate = 1403482200
 
-
 def worksheet():
 
     sheet_scope = 'https://spreadsheets.google.com/feeds'
@@ -86,8 +85,10 @@ def datalist_test():
 '''
 if __name__ == '__main__':
 
-    test = 0
+    test = 1
     plot = 1
+    PlotlyPlot.stackedbar()
+    exit()
 
     if test == 1:
         print "Test Mode"
@@ -95,7 +96,7 @@ if __name__ == '__main__':
         if os.path.isfile(dbname):
             os.remove(dbname)
             print "database erased"
-        for x in range(0, 1):
+        for x in range(0, 225):
             SqlBase.update(dbname, test, datalist_test())
         print "database updated"
         if plot:

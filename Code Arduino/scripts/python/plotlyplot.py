@@ -6,6 +6,7 @@ import plotly.plotly as py
 import plotly.tools as tls
 import urllib2
 import os
+import time
 import requests  # Used for the warning InsecurePlatformWarning in python 2.7.3
 from plotly import exceptions
 from plotly.graph_objs import *
@@ -19,6 +20,8 @@ class PlotlyPlot:
 
         pass
 
+
+
     @staticmethod
     def plot(dbname, test):
         """
@@ -26,7 +29,6 @@ class PlotlyPlot:
         :param dbname
         :return:   none
         """
-
         if test:
             telefolder = 'Test_Teleinfo/'
             tempfolder = 'Test_Temperature/'
@@ -34,25 +36,35 @@ class PlotlyPlot:
             telefolder = 'Yun_Teleinfo/'
             tempfolder = 'Yun_Temperature/'
 
-        try:
-            # check if plotly website is online
-            if not test:
-                os.system("wget -q --delete-after www.plot.ly")         # quiet and delete after download.
-                _ = urllib2.urlopen('https://plot.ly/', timeout=4)
-
-            requests.packages.urllib3.disable_warnings()                # disable warning in plotly call with SSL
-
+        if PlotlyPlot.connect():
             tables = ['Hour', 'Day', 'Week', 'Month', 'Year']
-
             for table in tables:
                 PlotlyPlot.teleinfo(dbname, table, telefolder)
+                time.sleep(5)
                 retval = PlotlyPlot.temperature(dbname, table, tempfolder)
                 if retval:
                     SqlBase.clear_plotly_hour_ovr(dbname)
                 SqlBase.set_flag_upload(dbname, table)
-
-        except urllib2.URLError:
+        else:
             pass
+
+
+    @staticmethod
+    def connect():
+        """
+        Connect to plotly
+        :return:
+        """
+        try:
+            # check if plotly website is online
+            os.system("wget -q --delete-after www.plot.ly")         # quiet and delete after download.
+            _ = urllib2.urlopen('https://plot.ly/', timeout=4)
+
+            requests.packages.urllib3.disable_warnings()                # disable warning in plotly call with SSL
+            tls.get_credentials_file()                    # connect to plotly
+            return True
+        except exceptions:
+            return False
 
     @staticmethod
     def stackedbar():
@@ -63,22 +75,20 @@ class PlotlyPlot:
 
         trace1 = Bar(
             x=['giraffes'],
-            y=[0],
+            y=[132],
             name='SF Zoo'
         )
-        print trace1
         trace2 = Bar(
             x=['giraffes'],
-            y=[0],
+            y=[132],
             name='LA Zoo'
         )
-        print trace2
         data = Data([trace1, trace2])
-        print data
         layout = Layout(barmode='stack')
         fig = Figure(data=data, layout=layout)
         tls.get_credentials_file()
         plot_url = py.plot(fig, filename='stacked-bar', auto_open=False)
+
 
 
     @staticmethod
@@ -132,7 +142,6 @@ class PlotlyPlot:
             else:
                 plotly_overwrite = 1
             try:
-                tls.get_credentials_file()
                 if plotly_overwrite == 1:
                     py.plot(fig, filename=folder_name + table, fileopt='overwrite', auto_open=False)
                 else:
@@ -197,7 +206,6 @@ class PlotlyPlot:
             layout = Layout(title=table, yaxis=YAxis(title='°C'), xaxis=XAxis(title=table))
             fig = Figure(data=data, layout=layout)
             try:
-                tls.get_credentials_file()
                 if plotly_overwrite == 1:
                     py.plot(fig, filename=folder_name + table, fileopt='overwrite', auto_open=False)
                 else:
