@@ -123,15 +123,15 @@ class PlotlyPlot:
                         data = cur.fetchone()
                         xtring = "void"
                         if table == 'Hour':
-                            xtring = data['Day'] + "-" + data[table]
+                            xtring = str(data['Day']) + "-" + str(data[table])
                         elif table == 'Day':
-                            xtring = data['Year'] + "-" + data['Month'] + "-" + data[table]
+                            xtring = str(data['Year']) + "-" + str(data['Month']) + "-" + str(data[table])
                         elif table == 'Week':
-                            xtring = data['Year'] + "W" + data[table]
+                            xtring = str(data['Year']) + "W" + str(data[table])
                         elif table == 'Month':
-                            xtring = data['Year'] + "M" + data[table]
+                            xtring = str(data['Year']) + "M" + str(data[table])
                         elif table == 'Year':
-                            xtring = data[table]
+                            xtring = str(data[table])
                         else:
                             log_error("error table name in Plotlyplot()")
                             exit()
@@ -198,15 +198,15 @@ class PlotlyPlot:
                         data = cur.fetchone()
                         xtring = "void"
                         if table == 'Hour':
-                            xtring = data['Day'] + "-" + data[table]
+                            xtring = str(data['Day']) + "-" + str(data[table])
                         elif table == 'Day':
-                            xtring = data['Year'] + "-" + data['Month'] + "-" + data[table]
+                            xtring = str(data['Year']) + "-" + str(data['Month']) + "-" + str(data[table])
                         elif table == 'Week':
-                            xtring = data['Year'] + "W" + data[table]
+                            xtring = str(data['Year']) + "W" + str(data[table])
                         elif table == 'Month':
-                            xtring = data['Year'] + "M" + data[table]
+                            xtring = str(data['Year']) + "M" + str(data[table])
                         elif table == 'Year':
-                            xtring = data[table]
+                            xtring = str(data[table])
                         else:
                             log_error("error table name in Plotlyplot()")
                             exit()

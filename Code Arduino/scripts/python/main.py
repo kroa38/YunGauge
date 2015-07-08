@@ -87,8 +87,6 @@ if __name__ == '__main__':
 
     test = 1
     plot = 1
-    PlotlyPlot.stackedbar()
-    exit()
 
     if test == 1:
         print "Test Mode"
