@@ -581,3 +581,4 @@ class SqlBase:
         except sqlite3.Error:
             log_error("Error database access in Sqlbase.get_number_of_record()")
             exit()
+

@@ -121,7 +121,21 @@ class PlotlyPlot:
                     for count in range(count_start, count_end+1):
                         cur.execute('SELECT * FROM %s WHERE rowid = %d' % (table, count))
                         data = cur.fetchone()
-                        x1range.append(str(data[table]))
+                        xtring = "void"
+                        if table == 'Hour':
+                            xtring = data['Day'] + "-" + data[table]
+                        elif table == 'Day':
+                            xtring = data['Year'] + "-" + data['Month'] + "-" + data[table]
+                        elif table == 'Week':
+                            xtring = data['Year'] + "W" + data[table]
+                        elif table == 'Month':
+                            xtring = data['Year'] + "M" + data[table]
+                        elif table == 'Year':
+                            xtring = data[table]
+                        else:
+                            log_error("error table name in Plotlyplot()")
+                            exit()
+                        x1range.append(xtring)
                         if table == 'Hour':
                             hp_range.append(data['Diff_HP'])
                             hc_range.append(data['Diff_HC'])
@@ -182,7 +196,21 @@ class PlotlyPlot:
                     for count in range(count_start, count_end+1):
                         cur.execute('SELECT * FROM %s WHERE rowid = %d' % (table, count))
                         data = cur.fetchone()
-                        x1range.append(str(data[table]))
+                        xtring = "void"
+                        if table == 'Hour':
+                            xtring = data['Day'] + "-" + data[table]
+                        elif table == 'Day':
+                            xtring = data['Year'] + "-" + data['Month'] + "-" + data[table]
+                        elif table == 'Week':
+                            xtring = data['Year'] + "W" + data[table]
+                        elif table == 'Month':
+                            xtring = data['Year'] + "M" + data[table]
+                        elif table == 'Year':
+                            xtring = data[table]
+                        else:
+                            log_error("error table name in Plotlyplot()")
+                            exit()
+                        x1range.append(xtring)
                         if table == 'Hour':
                             tin_range.append(data['Temp_In'])
                         else:
