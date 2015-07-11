@@ -39,12 +39,15 @@ class PlotlyPlot:
         if PlotlyPlot.connect():
             tables = ['Hour', 'Day', 'Week', 'Month', 'Year']
             for table in tables:
-                PlotlyPlot.teleinfo(dbname, table, telefolder)
-                time.sleep(5)
-                retval = PlotlyPlot.temperature(dbname, table, tempfolder)
-                if retval:
-                    SqlBase.clear_plotly_hour_ovr(dbname)
-                SqlBase.set_flag_upload(dbname, table)
+                if table == 'Hour':
+                    PlotlyPlot.teleinfo(dbname, table, telefolder)
+                    retval = PlotlyPlot.temperature(dbname, table, tempfolder)
+                    if retval:
+                        SqlBase.clear_plotly_hour_ovr(dbname)
+                    SqlBase.set_flag_upload(dbname, table)
+                else:
+                    PlotlyPlot.teleinfo(dbname, table, telefolder)
+                    PlotlyPlot.temperature(dbname, table, tempfolder)
         else:
             pass
 
@@ -154,7 +157,7 @@ class PlotlyPlot:
             if table == 'Hour':
                 plotly_overwrite = SqlBase.get_plotly_cw_ovr(dbname)
             else:
-                plotly_overwrite = 0
+                plotly_overwrite = 1
             try:
                 if plotly_overwrite == 1:
                     py.plot(fig, filename=folder_name + table, fileopt='overwrite', auto_open=False)
@@ -226,7 +229,7 @@ class PlotlyPlot:
                 trace = Scatter(x=x1range, y=tin_range, name='Temperature In', mode='lines+markers')
                 data = Data([trace])
             else:
-                plotly_overwrite = 0
+                plotly_overwrite = 1
                 trace1 = Scatter(x=x1range, y=tin_min_range, name='Temperature In Min', mode='lines+markers')
                 trace2 = Scatter(x=x1range, y=tin_avg_range, name='Temperature In Avg', mode='lines+markers')
                 trace3 = Scatter(x=x1range, y=tin_max_range, name='Temperature In Max', mode='lines+markers')
