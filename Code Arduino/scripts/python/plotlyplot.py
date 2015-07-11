@@ -149,8 +149,8 @@ class PlotlyPlot:
                 log_error("Error database access in PlotlyPlot.teleinfo()")
                 exit()
             # upload data list to plotly
-            trace1 = Bar(y=hp_range, x=x1range, name='HP')
-            trace2 = Bar(y=hc_range, x=x1range, name='HC')
+            trace1 = Bar(y=hp_range, x=x1range, name='HP', xsrc=table)
+            trace2 = Bar(y=hc_range, x=x1range, name='HC', xsrc=table)
             data = Data([trace1, trace2])
             layout = Layout(title=table, barmode='stack', yaxis=YAxis(title='Watt'), xaxis=XAxis(title=table))
             fig = Figure(data=data, layout=layout)
@@ -226,13 +226,13 @@ class PlotlyPlot:
             # upload data list to plotly
             if table == 'Hour':
                 plotly_overwrite = SqlBase.get_plotly_cw_ovr(dbname)
-                trace = Scatter(x=x1range, y=tin_range, name='Temperature In', mode='lines+markers')
+                trace = Scatter(x=x1range, y=tin_range, name='Temperature In', mode='lines+markers', xsrc=table)
                 data = Data([trace])
             else:
                 plotly_overwrite = 1
-                trace1 = Scatter(x=x1range, y=tin_min_range, name='Temperature In Min', mode='lines+markers')
-                trace2 = Scatter(x=x1range, y=tin_avg_range, name='Temperature In Avg', mode='lines+markers')
-                trace3 = Scatter(x=x1range, y=tin_max_range, name='Temperature In Max', mode='lines+markers')
+                trace1 = Scatter(x=x1range, y=tin_min_range, name='Temperature In Min', mode='lines+markers', xsrc=table)
+                trace2 = Scatter(x=x1range, y=tin_avg_range, name='Temperature In Avg', mode='lines+markers', xsrc=table)
+                trace3 = Scatter(x=x1range, y=tin_max_range, name='Temperature In Max', mode='lines+markers', xsrc=table)
                 data = Data([trace1, trace2, trace3])
             layout = Layout(title=table, yaxis=YAxis(title='°C'), xaxis=XAxis(title=table))
             fig = Figure(data=data, layout=layout)
