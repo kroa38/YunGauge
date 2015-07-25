@@ -39,15 +39,8 @@ class PlotlyPlot:
         if PlotlyPlot.connect():
             tables = ['Hour', 'Day', 'Week', 'Month', 'Year']
             for table in tables:
-                if table == 'Hour':
-                    PlotlyPlot.teleinfo(dbname, table, telefolder)
-                    retval = PlotlyPlot.temperature(dbname, table, tempfolder)
-                    if retval:
-                        SqlBase.clear_plotly_hour_ovr(dbname)
-                    SqlBase.set_flag_upload(dbname, table)
-                else:
-                    PlotlyPlot.teleinfo(dbname, table, telefolder)
-                    PlotlyPlot.temperature(dbname, table, tempfolder)
+                PlotlyPlot.teleinfo(dbname, table, telefolder)
+                PlotlyPlot.temperature(dbname, table, tempfolder)
         else:
             pass
 
@@ -158,6 +151,7 @@ class PlotlyPlot:
                 plotly_overwrite = SqlBase.get_plotly_cw_ovr(dbname)
             else:
                 plotly_overwrite = 1
+            plotly_overwrite = 1    # force overwrite cause plotly bug
             try:
                 if plotly_overwrite == 1:
                     py.plot(fig, filename=folder_name + table, fileopt='overwrite', auto_open=False)
@@ -236,6 +230,7 @@ class PlotlyPlot:
                 data = Data([trace1, trace2, trace3])
             layout = Layout(title=table, yaxis=YAxis(title='°C'), xaxis=XAxis(title=table))
             fig = Figure(data=data, layout=layout)
+            plotly_overwrite = 1    # force overwrite cause plotly bug
             try:
                 if plotly_overwrite == 1:
                     py.plot(fig, filename=folder_name + table, fileopt='overwrite', auto_open=False)

@@ -73,7 +73,7 @@ class SqlBase:
         :param dbname, mode, dataliste
         :return:  None
         """
-        max_days = 1
+        max_days = 3
 
         if test == 1:  # TEST MODE
 
