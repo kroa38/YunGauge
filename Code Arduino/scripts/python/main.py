@@ -101,6 +101,10 @@ if __name__ == '__main__':
             SqlBase.resetflagupload(dbname)
             PlotlyPlot.plot(dbname, test)
             print "Plotly updated"
+    if test == 2:
+        dbname = '/root/python/yun_database.db'
+        SqlBase.resetflagupload(dbname)
+        PlotlyPlot.plot(dbname, 0)
     else:
         dbname = '/root/python/yun_database.db'
         SqlBase.update(dbname, test, sys.argv[1:])
