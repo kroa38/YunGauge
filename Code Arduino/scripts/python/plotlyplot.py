@@ -13,6 +13,8 @@ from plotly.graph_objs import *
 from cloudscope import log_error
 from sqlcode import SqlBase
 
+# Tarif HP : 0.0998 x 1.20 (TTC)
+# Tarif HC : 0.0610 x 1.20 (TTC)
 
 class PlotlyPlot:
     """ Class to access to plotly"""
@@ -41,6 +43,9 @@ class PlotlyPlot:
             for table in tables:
                 PlotlyPlot.teleinfo(dbname, table, telefolder)
                 PlotlyPlot.temperature(dbname, table, tempfolder)
+            tables = ['Day', 'Week', 'Month', 'Year']
+            for table in tables:
+                PlotlyPlot.teleinfo_price(dbname, table, telefolder)
         else:
             pass
 
@@ -164,7 +169,84 @@ class PlotlyPlot:
         else:
             pass
 
+    @staticmethod
+    def teleinfo_price(dbname, table, folder_name):
+        """
+        Send to plotly the currentweek tabel from the database
+        update flag into the database if data uploaded
+        :param dbname
+        :return:   none
+        """
+        tarif_hc = 0.0000610*1.2
+        tarif_hp = 0.0000998*1.2
 
+        number_of_record = SqlBase.get_number_of_record(dbname)  # ignore first teleinfo record because plotly crash with double zero!
+        if number_of_record < 2:
+            return
+
+        count_dict = SqlBase.count_to_upload(dbname, table)
+        count_start = count_dict['count_start']
+        count_end = count_dict['count_end']
+
+        # construct the differents list for stacked bar graph
+        if count_start:
+            hp_range = []
+            hc_range = []
+            x1range = []
+            try:
+                conn = sqlite3.connect(dbname)
+                with conn:
+                    conn.row_factory = sqlite3.Row
+                    cur = conn.cursor()
+                    for count in range(count_start, count_end+1):
+                        cur.execute('SELECT * FROM %s WHERE rowid = %d' % (table, count))
+                        data = cur.fetchone()
+                        xtring = "void"
+                        if table == 'Hour':
+                            xtring = str(data['Day']) + "-" + str(data[table])
+                        elif table == 'Day':
+                            xtring = str(data['Year']) + "-" + str(data['Month']) + "-" + str(data[table])
+                        elif table == 'Week':
+                            xtring = str(data['Year']) + "W" + str(data[table])
+                        elif table == 'Month':
+                            xtring = str(data['Year']) + "M" + str(data[table])
+                        elif table == 'Year':
+                            xtring = str(data[table])
+                        else:
+                            log_error("error table name in Plotlyplot()")
+                            exit()
+                        x1range.append(xtring)
+                        if table == 'Hour':
+                            hp_range.append(round(data['Diff_HP']*tarif_hp,2))
+                            hc_range.append(round(data['Diff_HC']*tarif_hc,2))
+                        else:
+                            hp_range.append(round(data['Cumul_HP']*tarif_hp,2))
+                            hc_range.append(round(data['Cumul_HC']*tarif_hc,2))
+            except sqlite3.Error:
+                log_error("Error database access in PlotlyPlot.teleinfo()")
+                exit()
+            # upload data list to plotly
+            trace1 = Bar(y=hp_range, x=x1range, name='HP', xsrc=table)
+            trace2 = Bar(y=hc_range, x=x1range, name='HC', xsrc=table)
+            data = Data([trace1, trace2])
+            layout = Layout(title=table, barmode='stack', yaxis=YAxis(title='Euro'), xaxis=XAxis(title=table))
+            fig = Figure(data=data, layout=layout)
+            if table == 'Hour':
+                plotly_overwrite = SqlBase.get_plotly_cw_ovr(dbname)
+            else:
+                plotly_overwrite = 1
+            plotly_overwrite = 1    # force overwrite cause plotly bug
+            try:
+                if plotly_overwrite == 1:
+                    py.plot(fig, filename='Price_' + folder_name + table, fileopt='overwrite', auto_open=False)
+                else:
+                    py.plot(fig, filename='Price_' + folder_name + table, fileopt='extend', auto_open=False)
+                return plotly_overwrite
+            except exceptions, e:
+                log_error(str(e))
+                exit()
+        else:
+            pass
     @staticmethod
     def temperature(dbname, table, folder_name):
         """

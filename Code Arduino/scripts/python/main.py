@@ -85,7 +85,7 @@ def datalist_test():
 '''
 if __name__ == '__main__':
 
-    test = 1
+    test = 2
     plot = 1
 
     if test == 1:
@@ -102,8 +102,9 @@ if __name__ == '__main__':
             PlotlyPlot.plot(dbname, test)
             print "Plotly updated"
     if test == 2:
-        dbname = '/root/python/yun_database.db'
-        SqlBase.resetflagupload(dbname)
+        # dbname = '/root/python/yun_database.db'
+        dbname = 'yun_database.db'
+        # SqlBase.resetflagupload(dbname)
         PlotlyPlot.plot(dbname, 0)
     else:
         dbname = '/root/python/yun_database.db'
