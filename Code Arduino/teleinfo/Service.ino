@@ -124,6 +124,7 @@ void Srv_AdjustDateEveryDay(void)
           
           if(now.hour() == adjust_rtc)
           {
+              Reset_Shield();             
               // on peut pinger google pour mettre à jour l'heure  
               Event.PingGoogle = 1;  
               

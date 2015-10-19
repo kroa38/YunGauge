@@ -676,3 +676,20 @@ String temperature(void)
 
   return Result; 
 }
+/***********************************************************
+void Reset_Shield(void)
+Reset le shield
+Utilisé tous les jour au moment de la mise à l'heure de la RTC
+suite a un bug pas encore resolu du shield qui ne captrue plus
+la teleinfo après 11j de capture.
+in : none
+out : none
+************************************************************/
+void Reset_Shield(void)
+{
+  
+    digitalWrite(BUSYPIN, HIGH);   // BUSY = 1 la carte Shield est initialisé.
+    delay(1000);
+    digitalWrite(BUSYPIN, LOW);    // BUSY = 0 la carte Shield peut demarrer.  
+  
+}
