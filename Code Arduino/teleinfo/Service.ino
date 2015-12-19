@@ -124,7 +124,7 @@ void Srv_AdjustDateEveryDay(void)
           
           if(now.hour() == adjust_rtc)
           {
-              Reset_Shield();             
+              //Reset_Shield();         
               // on peut pinger google pour mettre à jour l'heure  
               Event.PingGoogle = 1;  
               
@@ -292,6 +292,8 @@ void Srv_Ntp_To_Rtc_Update(void)
 /***********************************************************
 void Srv_UpdateTeleinfoDb();
 Met a jour la base de donnée teleinfo
+reset arduino + shield à l'heure forunie par adjust_rtc
+afin d'éviter un pb de buffer.
 In : String
 Out : void
 ************************************************************/
@@ -310,6 +312,16 @@ void Srv_UpdateTeleinfoDb(void)
     Process shell;
     shell.runShellCommand(Pytcde);
     while(shell.running()); 
+    
+    I2C_RequestToSend();
+    DateTime now = RTC.now();
+    I2C_ClearToSend();   
+    
+    if(now.hour() == adjust_rtc)
+     {
+       shell.runShellCommand("reboot");
+       Reset_by_Watchdog();
+     }
 
   }
 }

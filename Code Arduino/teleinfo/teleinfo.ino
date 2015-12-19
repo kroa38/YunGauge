@@ -7,7 +7,7 @@
 #include <YunClient.h>
 #include <YunServer.h>
 #include <OneWire.h>
-
+#include <avr/wdt.h>
 #include <SoftwareSerial.h>
 #include <Wire.h>
 #include "RTClib.h"
@@ -691,5 +691,16 @@ void Reset_Shield(void)
     digitalWrite(BUSYPIN, HIGH);   // BUSY = 1 la carte Shield est initialisé.
     delay(1000);
     digitalWrite(BUSYPIN, LOW);    // BUSY = 0 la carte Shield peut demarrer.  
+  
+}
+/***********************************************************
+void Reset_by_Watchdog(void)
+in : none
+out : none
+************************************************************/
+void Reset_by_Watchdog(void)
+{
+  wdt_enable(WDTO_1S);
+  while(1);
   
 }
