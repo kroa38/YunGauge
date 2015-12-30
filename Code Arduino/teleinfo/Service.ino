@@ -319,7 +319,7 @@ void Srv_UpdateTeleinfoDb(void)
     
     if(now.hour() == adjust_rtc)
      {
-       shell.runShellCommand("reboot");
+       //shell.runShellCommand("reboot");
        Reset_by_Watchdog();
      }
 
